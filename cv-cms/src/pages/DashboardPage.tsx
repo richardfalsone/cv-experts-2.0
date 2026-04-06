@@ -17,7 +17,7 @@ export const DashboardPage: React.FC = () => {
   const signOut = useAuthStore(s => s.signOut);
   const user = useAuthStore(s => s.user);
   const toast = useToast();
-  const { getSnapshots } = useVersionStore();
+  const { fetchSnapshots, snapshots: allSnapshots } = useVersionStore();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +65,17 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchEmployees();
+    // Fetch initial snapshots for all to avoid empty counts on mount
+    supabase.from('versions').select('id, expert_id, label, is_published').then(({ data }) => {
+      if (data) {
+        const mapped = data.map(d => ({
+          ...d,
+          is_draft: d.label.startsWith('[DRAFT]'),
+          label: d.label.replace('[DRAFT] ', '')
+        }));
+        useVersionStore.setState({ snapshots: mapped as any[] });
+      }
+    });
   }, []);
 
   // Filtered & sorted employees
@@ -353,9 +364,9 @@ export const DashboardPage: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
             <AnimatePresence>
               {displayed.map((emp, i) => {
-                const snapshots = getSnapshots(emp.id);
-                const draftCount = snapshots.filter(s => s.isDraft).length;
-                const versionCount = snapshots.length;
+                const empSnapshots = allSnapshots.filter(s => s.expert_id === emp.id);
+                const draftCount = empSnapshots.filter(s => s.is_draft).length;
+                const versionCount = empSnapshots.length;
                 const lastUpdated = emp.updatedAt
                   ? new Date(emp.updatedAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
                   : '—';

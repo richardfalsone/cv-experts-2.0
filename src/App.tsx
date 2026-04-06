@@ -74,12 +74,38 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
 
   // UI DE CARGA / ERROR (Público)
   if (error && !cmsData && !isPreview) {
+    const isConfigMissing = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
-        <div className="text-center space-y-4">
-          <div className="text-4xl font-bold italic tracking-tighter uppercase opacity-30">404</div>
-          <div className="text-sm opacity-50 uppercase tracking-[0.3em] font-medium">Perfil no Encontrado</div>
-          <div className="text-[10px] opacity-20 uppercase">Verifica la URL o contacta al administrador</div>
+        <div className="text-center space-y-6 max-w-md px-6">
+          <div className="text-6xl font-bold italic tracking-tighter uppercase opacity-20">404</div>
+          <div className="space-y-2">
+            <div className="text-sm opacity-80 uppercase tracking-[0.3em] font-bold text-red-500">Error de Configuración</div>
+            <div className="text-[12px] opacity-60 leading-relaxed">
+              {isConfigMissing 
+                ? "Las llaves de Supabase no están configuradas en el entorno (Vercel/Env). Contacta al administrador." 
+                : `No se pudo encontrar el perfil "${slug || 'richard-falsone'}". Asegúrate de que el slug sea correcto.`}
+            </div>
+          </div>
+          
+          {/* Solo visible para ayudar al debug sin exponer llaves reales */}
+          <div className="pt-8 border-t border-white/5 space-y-1">
+            <div className="text-[8px] opacity-30 uppercase tracking-widest font-bold">Estado Técnico</div>
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-1.5 grayscale opacity-50">
+                <div className={`w-1.5 h-1.5 rounded-full ${import.meta.env.VITE_SUPABASE_URL ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-[7px] font-bold uppercase tracking-tighter text-white/40">URL</span>
+              </div>
+              <div className="flex items-center gap-1.5 grayscale opacity-50">
+                <div className={`w-1.5 h-1.5 rounded-full ${import.meta.env.VITE_SUPABASE_ANON_KEY ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-[7px] font-bold uppercase tracking-tighter text-white/40">KEY</span>
+              </div>
+              <div className="flex items-center gap-1.5 grayscale opacity-50">
+                <div className={`w-1.5 h-1.5 rounded-full ${error ? 'bg-red-500' : 'bg-green-500'}`} />
+                <span className="text-[7px] font-bold uppercase tracking-tighter text-white/40">Query</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

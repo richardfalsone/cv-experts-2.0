@@ -1,134 +1,151 @@
-/**
- * versionStore.ts — Version Control System for Room of Experts CMS
- * Manages snapshots, drafts, and publish history per employee CV.
- */
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { CVBlock } from '../types/cv.types';
+import { supabase } from '../lib/supabase';
 
 export interface VersionSnapshot {
   id: string;
-  employeeId: string;
+  expert_id: string; // Changed from employeeId to match DB
   label: string;
-  timestamp: string;
+  created_at: string; // Match DB
   blocks: CVBlock[];
-  isDraft: boolean;
-  isPublished: boolean;
-  publishedAt?: string;
-  createdBy?: string;
+  is_published: boolean;
+  is_draft: boolean; // We'll assume we add this or handle it
 }
 
 interface VersionStore {
-  // All snapshots across all CVs
   snapshots: VersionSnapshot[];
+  loading: boolean;
 
-  // Save a new snapshot (auto-save or manual)
-  saveSnapshot: (employeeId: string, blocks: CVBlock[], label?: string, isDraft?: boolean) => string;
-
-  // Get all snapshots for a specific employee
-  getSnapshots: (employeeId: string) => VersionSnapshot[];
-
-  // Get the most recent snapshot (auto-saved)
-  getLatestSnapshot: (employeeId: string) => VersionSnapshot | null;
-
-  // Mark a snapshot as published
-  markAsPublished: (snapshotId: string) => void;
-
-  // Restore a snapshot (returns the blocks to restore)
-  restoreSnapshot: (snapshotId: string) => CVBlock[] | null;
-
-  // Delete a snapshot
-  deleteSnapshot: (snapshotId: string) => void;
-
-  // Get the published snapshot for an employee
-  getPublishedSnapshot: (employeeId: string) => VersionSnapshot | null;
-
-  // Rename a snapshot
-  renameSnapshot: (snapshotId: string, label: string) => void;
+  fetchSnapshots: (expertId: string) => Promise<void>;
+  saveSnapshot: (expertId: string, blocks: CVBlock[], label?: string, isDraft?: boolean) => Promise<string | null>;
+  markAsPublished: (snapshotId: string, expertId: string) => Promise<void>;
+  deleteSnapshot: (snapshotId: string) => Promise<void>;
+  
+  // Helpers (synchronous on current state)
+  getSnapshots: (expertId: string) => VersionSnapshot[];
+  getPublishedSnapshot: (expertId: string) => VersionSnapshot | null;
 }
 
-export const useVersionStore = create<VersionStore>()(
-  persist(
-    (set, get) => ({
-      snapshots: [],
+export const useVersionStore = create<VersionStore>((set, get) => ({
+  snapshots: [],
+  loading: false,
 
-      saveSnapshot: (employeeId, blocks, label, isDraft = false) => {
-        const id = `v-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const snapshot: VersionSnapshot = {
-          id,
-          employeeId,
-          label: label || (isDraft ? `Borrador ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}` : `Auto-guardado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`),
-          timestamp: new Date().toISOString(),
-          blocks: JSON.parse(JSON.stringify(blocks)), // deep clone
-          isDraft,
-          isPublished: false,
-        };
+  fetchSnapshots: async (expertId) => {
+    set({ loading: true });
+    try {
+      const { data, error } = await supabase
+        .from('versions')
+        .select('*')
+        .eq('expert_id', expertId)
+        .order('created_at', { ascending: false });
 
-        // Keep max 20 auto-saves, unlimited drafts
-        set(state => {
-          let existing = [...state.snapshots];
-          if (!isDraft) {
-            // Remove old auto-saves (keep last 15)
-            const autoSaves = existing.filter(s => s.employeeId === employeeId && !s.isDraft && !s.isPublished);
-            if (autoSaves.length >= 15) {
-              const toRemove = autoSaves.slice(0, autoSaves.length - 14).map(s => s.id);
-              existing = existing.filter(s => !toRemove.includes(s.id));
-            }
-          }
-          return { snapshots: [snapshot, ...existing] };
-        });
+      if (error) throw error;
+      
+      const mapped = (data || []).map(d => ({
+        ...d,
+        is_draft: d.label.startsWith('[DRAFT]'),
+        label: d.label.replace('[DRAFT] ', '')
+      }));
 
-        return id;
-      },
-
-      getSnapshots: (employeeId) => {
-        return get().snapshots
-          .filter(s => s.employeeId === employeeId)
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      },
-
-      getLatestSnapshot: (employeeId) => {
-        const all = get().getSnapshots(employeeId);
-        return all[0] || null;
-      },
-
-      markAsPublished: (snapshotId) => {
-        set(state => ({
-          snapshots: state.snapshots.map(s => {
-            if (s.id === snapshotId) {
-              return { ...s, isPublished: true, isDraft: false, publishedAt: new Date().toISOString() };
-            }
-            // Unpublish previously published snapshots for same employee
-            const targetEmployee = state.snapshots.find(x => x.id === snapshotId)?.employeeId;
-            if (s.employeeId === targetEmployee && s.isPublished) {
-              return { ...s, isPublished: false };
-            }
-            return s;
-          })
-        }));
-      },
-
-      restoreSnapshot: (snapshotId) => {
-        const snap = get().snapshots.find(s => s.id === snapshotId);
-        return snap ? JSON.parse(JSON.stringify(snap.blocks)) : null;
-      },
-
-      deleteSnapshot: (snapshotId) => {
-        set(state => ({ snapshots: state.snapshots.filter(s => s.id !== snapshotId) }));
-      },
-
-      getPublishedSnapshot: (employeeId) => {
-        return get().snapshots.find(s => s.employeeId === employeeId && s.isPublished) || null;
-      },
-
-      renameSnapshot: (snapshotId, label) => {
-        set(state => ({
-          snapshots: state.snapshots.map(s => s.id === snapshotId ? { ...s, label } : s)
-        }));
-      },
-    }),
-    {
-      name: 'cms_versions_v1',
+      set({ snapshots: mapped as any[] });
+    } catch (err) {
+      console.error('Error fetching snapshots:', err);
+    } finally {
+      set({ loading: false });
     }
-  )
-);
+  },
+
+  saveSnapshot: async (expertId, blocks, label, isDraft = false) => {
+    try {
+      const finalLabel = label || (isDraft ? `Borrador ${new Date().toLocaleTimeString()}` : `Auto-guardado ${new Date().toLocaleTimeString()}`);
+      
+      const newSnapshot = {
+        expert_id: expertId,
+        blocks,
+        label: isDraft ? `[DRAFT] ${finalLabel}` : finalLabel,
+        is_published: false,
+      };
+
+      const { data, error } = await supabase
+        .from('versions')
+        .insert([newSnapshot])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Map back for local state
+      const mapped = {
+        ...data,
+        is_draft: data.label.startsWith('[DRAFT]'),
+        label: data.label.replace('[DRAFT] ', '')
+      };
+
+      set(state => ({ snapshots: [mapped, ...state.snapshots] }));
+      return data.id;
+    } catch (err) {
+      console.error('Error saving snapshot:', err);
+      return null;
+    }
+  },
+
+  markAsPublished: async (snapshotId, expertId) => {
+    try {
+      const snap = get().snapshots.find(s => s.id === snapshotId);
+      if (!snap) return;
+
+      // 1. Unpublish others for this expert
+      await supabase
+        .from('versions')
+        .update({ is_published: false })
+        .eq('expert_id', expertId);
+
+      // 2. Mark this one and REMOVE draft prefix if exists
+      const cleanLabel = snap.label.replace('[DRAFT] ', '');
+      const { error } = await supabase
+        .from('versions')
+        .update({ 
+          is_published: true, 
+          label: cleanLabel 
+        })
+        .eq('id', snapshotId);
+
+      if (error) throw error;
+
+      set(state => ({
+        snapshots: state.snapshots.map(s => ({
+          ...s,
+          label: s.id === snapshotId ? cleanLabel : s.label,
+          is_published: s.id === snapshotId,
+          is_draft: s.id === snapshotId ? false : s.is_draft
+        }))
+      }));
+    } catch (err) {
+      console.error('Error marking as published:', err);
+    }
+  },
+
+  deleteSnapshot: async (snapshotId) => {
+    try {
+      const { error } = await supabase
+        .from('versions')
+        .delete()
+        .eq('id', snapshotId);
+
+      if (error) throw error;
+      set(state => ({ snapshots: state.snapshots.filter(s => s.id !== snapshotId) }));
+    } catch (err) {
+      console.error('Error deleting snapshot:', err);
+    }
+  },
+
+  getSnapshots: (expertId) => {
+    return get().snapshots
+      .filter(s => s.expert_id === expertId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  },
+
+  getPublishedSnapshot: (expertId) => {
+    return get().snapshots.find(s => s.expert_id === expertId && s.is_published) || null;
+  },
+}));

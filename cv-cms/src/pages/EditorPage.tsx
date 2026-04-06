@@ -203,21 +203,17 @@ const BlockOverlayZone: React.FC<{
 // VERSIONS PANEL
 // ─────────────────────────────────────────────
 const VersionsPanel: React.FC<{
-  employeeId: string;
+  expertId: string;
   onRestore: (blocks: CVBlock[]) => void;
   onClose: () => void;
-}> = ({ employeeId, onRestore, onClose }) => {
-  const { getSnapshots, deleteSnapshot, restoreSnapshot } = useVersionStore();
-  const snapshots = getSnapshots(employeeId);
+}> = ({ expertId, onRestore, onClose }) => {
+  const { snapshots, deleteSnapshot, fetchSnapshots } = useVersionStore();
   const toast = useToast();
 
   const handleRestore = (snap: VersionSnapshot) => {
-    const blocks = restoreSnapshot(snap.id);
-    if (blocks) {
-      onRestore(blocks);
-      toast.add(`Versión "${snap.label}" restaurada`, 'success');
-      onClose();
-    }
+    onRestore(snap.blocks);
+    toast.add(`Versión "${snap.label}" restaurada localmente. ¡No olvides guardar!`, 'success');
+    onClose();
   };
 
   return (
@@ -241,20 +237,20 @@ const VersionsPanel: React.FC<{
               key={snap.id}
               style={{
                 padding: '12px', borderRadius: 10, marginBottom: 6,
-                background: snap.isPublished ? 'rgba(0,229,160,0.05)' : 'var(--cms-surface-2)',
-                border: `1px solid ${snap.isPublished ? 'rgba(0,229,160,0.2)' : 'var(--cms-border)'}`,
+                background: snap.is_published ? 'rgba(0,229,160,0.05)' : 'var(--cms-surface-2)',
+                border: `1px solid ${snap.is_published ? 'rgba(0,229,160,0.2)' : 'var(--cms-border)'}`,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cms-text)' }}>{snap.label}</span>
-                    {snap.isPublished && <span style={{ fontSize: 9, background: 'rgba(0,229,160,0.15)', color: 'var(--cms-success)', padding: '1px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: 0.5 }}>PUBLICADO</span>}
-                    {snap.isDraft && <span style={{ fontSize: 9, background: 'rgba(107,136,181,0.15)', color: 'var(--cms-muted)', padding: '1px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: 0.5 }}>BORRADOR</span>}
+                    {snap.is_published && <span style={{ fontSize: 9, background: 'rgba(0,229,160,0.15)', color: 'var(--cms-success)', padding: '1px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: 0.5 }}>PUBLICADO</span>}
+                    {snap.is_draft && <span style={{ fontSize: 9, background: 'rgba(107,136,181,0.15)', color: 'var(--cms-muted)', padding: '1px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: 0.5 }}>BORRADOR</span>}
                     {i === 0 && <span style={{ fontSize: 9, background: 'rgba(0,164,255,0.15)', color: 'var(--cms-primary)', padding: '1px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: 0.5 }}>RECIENTE</span>}
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--cms-muted)', margin: 0 }}>
-                    {new Date(snap.timestamp).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {new Date(snap.created_at).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}
                     {' · '}{snap.blocks.filter(b => b.visible).length} bloques
                   </p>
                 </div>
@@ -268,7 +264,7 @@ const VersionsPanel: React.FC<{
                     <span className="material-symbols-outlined" style={{ fontSize: 14 }}>restore</span>
                     Restaurar
                   </button>
-                  {!snap.isPublished && (
+                  {!snap.is_published && (
                     <CMSIconButton icon="delete" danger size={15} title="Eliminar versión" onClick={() => deleteSnapshot(snap.id)} />
                   )}
                 </div>
@@ -305,7 +301,7 @@ export const EditorPage: React.FC = () => {
     toggleBlockVisibility, removeBlock, addBlock, markSaved, isDirty, undo, redo,
   } = useEditorStore();
 
-  const { saveSnapshot, markAsPublished, getPublishedSnapshot } = useVersionStore();
+  const { saveSnapshot, markAsPublished, getPublishedSnapshot, fetchSnapshots } = useVersionStore();
 
   // Device / zoom state
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
@@ -359,6 +355,9 @@ export const EditorPage: React.FC = () => {
           templateId: 'falsone',
           version: 1
         } as CVPage);
+
+        // 3. Cargar versiones desde Supabase
+        await fetchSnapshots(employeeId);
       } catch (err: any) {
         toast.add(`Error cargando el editor: ${err.message}`, 'error');
       }
@@ -396,8 +395,8 @@ export const EditorPage: React.FC = () => {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', employeeId);
 
-      // Save version snapshot (as historical record)
-      saveSnapshot(employeeId, page.blocks, isAutoSave ? undefined : `Guardado manual ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, false);
+      // Save version snapshot to Supabase (historical record)
+      await saveSnapshot(employeeId, page.blocks, isAutoSave ? undefined : `Guardado manual ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, false);
 
       markSaved();
       if (!isAutoSave) toast.add('Cambios guardados e impecablemente sincronizados', 'success');
@@ -412,8 +411,8 @@ export const EditorPage: React.FC = () => {
     if (!page || !employeeId) return;
     try {
       await handleSave();
-      saveSnapshot(employeeId, page.blocks, `Borrador ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, true);
-      toast.add('Borrador guardado localmente', 'info');
+      await saveSnapshot(employeeId, page.blocks, `Borrador ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, true);
+      toast.add('Borrador guardado en la nube', 'info');
     } catch {
       toast.add('Error al guardar borrador', 'error');
     }
@@ -445,9 +444,9 @@ export const EditorPage: React.FC = () => {
 
       if (expErr) throw expErr;
 
-      // 3. Crear snapshot de versión
-      const snapId = saveSnapshot(employeeId, page.blocks, `Publicado ${new Date().toLocaleDateString('es-MX', { dateStyle: 'short' })}`, false);
-      markAsPublished(snapId);
+      // 3. Crear snapshot de versión en Supabase
+      const snapId = await saveSnapshot(employeeId, page.blocks, `Publicado ${new Date().toLocaleDateString('es-MX', { dateStyle: 'short' })}`, false);
+      if (snapId) await markAsPublished(snapId, employeeId);
 
       // Actualizar estado local para UI
       setEmployee((prev: any) => ({ ...prev, isPublished: true }));
@@ -830,7 +829,7 @@ export const EditorPage: React.FC = () => {
               style={{ width: 300, borderRight: '1px solid var(--cms-border)', background: 'var(--cms-surface)', display: 'flex', flexDirection: 'column', flexShrink: 0, height: '100%', overflow: 'hidden' }}
             >
               <VersionsPanel
-                employeeId={employeeId!}
+                expertId={employeeId!}
                 onRestore={handleRestoreVersion}
                 onClose={() => setShowVersions(false)}
               />
