@@ -7,10 +7,10 @@ import { PageIntro } from './components/PageIntro';
 import { supabase } from './lib/supabase';
 
 // ── COMPONENTE CARGADOR DINÁMICO ──
-const CVLoader: React.FC<{ initialData?: any }> = ({ initialData }) => {
+const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
   const { slug } = useParams<{ slug: string }>();
-  const [cmsData, setCmsData] = useState<any>(initialData);
-  const [loading, setLoading] = useState(!initialData);
+  const [cmsData, setCmsData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 1. Escuchar actualizaciones en vivo del CMS (PostMessage)
@@ -22,6 +22,7 @@ const CVLoader: React.FC<{ initialData?: any }> = ({ initialData }) => {
       if (event.data?.type === 'CMS_UPDATE_PAGE') {
         setCmsData(event.data.page);
         setLoading(false);
+        setError(null);
       }
     };
 
@@ -30,46 +31,53 @@ const CVLoader: React.FC<{ initialData?: any }> = ({ initialData }) => {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // 2. Cargar datos desde Supabase si NO estamos en previsualización viva
+  // 2. Cargar datos desde Supabase si NO estamos en previsualización o si el postMessage aún no llega
   useEffect(() => {
-    // Si ya tenemos datos (ej. por postMessage), no cargamos de DB
-    if (cmsData && !loading) return;
-
+    // Si es preview y ya tenemos data de postMessage, no buscamos en DB
+    if (isPreview && cmsData) return;
+    
     const fetchData = async () => {
       try {
-        const targetSlug = slug || 'richard-falsone'; // Richard por defecto si no hay slug
+        const targetSlug = slug || 'richard-falsone';
         
-        // Buscamos el experto por su slug
         const { data: expert, error: expertErr } = await supabase
           .from('experts')
           .select('id')
           .eq('slug', targetSlug)
           .single();
 
-        if (expertErr || !expert) throw new Error('Experto no encontrado');
+        if (expertErr || !expert) {
+          if (isPreview) return; // En preview ignoramos si no existe en DB todavía
+          throw new Error('Experto no encontrado');
+        }
 
-        // Traemos el contenido de su página técnica
         const { data: page, error: pageErr } = await supabase
           .from('pages')
           .select('blocks, meta')
           .eq('expert_id', expert.id)
           .single();
 
-        if (pageErr || !page) throw new Error('Página no encontrada');
+        if (pageErr || !page) {
+          if (isPreview) return;
+          throw new Error('Página no encontrada');
+        }
 
         setCmsData(page);
       } catch (err: any) {
-        console.error('Error cargando CV:', err.message);
-        setError(err.message);
+        if (!isPreview) {
+          console.error('Error cargando CV:', err.message);
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (!isPreview || cmsData) setLoading(false);
       }
     };
 
     fetchData();
-  }, [slug]);
+  }, [slug, isPreview]);
 
-  if (loading) {
+  // En modo preview, si no hay data aún, mostramos carga pero permitimos que llegue el postMessage
+  if (loading && !cmsData && !isPreview) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
         <div className="text-sm font-bold tracking-widest uppercase opacity-50 animate-pulse">
@@ -90,6 +98,17 @@ const CVLoader: React.FC<{ initialData?: any }> = ({ initialData }) => {
     );
   }
 
+  // Si no hay data y es preview, mostramos un estado de espera elegante
+  if (!cmsData && isPreview) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
+        <div className="text-sm font-bold tracking-widest uppercase opacity-30">
+          Esperando datos del editor...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-[var(--bg)]">
       <PageIntro />
@@ -104,12 +123,9 @@ export default function App() {
       <LanguageProvider>
         <BrowserRouter>
           <Routes>
-            {/* Ruta raíz: Carga a Richard por defecto o lo que definamos */}
             <Route path="/" element={<CVLoader />} />
-            {/* Ruta dinámica: Para Luisa y otros expertos (/cv/luisa-diseno) */}
             <Route path="/cv/:slug" element={<CVLoader />} />
-            {/* Ruta para el editor (cuando vive dentro del iframe) */}
-            <Route path="/preview" element={<CVLoader />} />
+            <Route path="/preview" element={<CVLoader isPreview />} />
           </Routes>
         </BrowserRouter>
       </LanguageProvider>

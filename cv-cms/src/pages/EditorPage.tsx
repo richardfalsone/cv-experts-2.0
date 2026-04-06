@@ -864,7 +864,7 @@ export const EditorPage: React.FC = () => {
                   transition: 'width 0.3s ease',
                 }}>
                   <iframe
-                    src={PORTFOLIO_URL}
+                    src={`${PORTFOLIO_URL}/preview`}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -956,7 +956,7 @@ export const EditorPage: React.FC = () => {
               }}>
                 {/* Portfolio iframe — Altura fija grande para mostrar todo el contenido y dejar que el CMS haga scroll */}
                 <iframe
-                  src={PORTFOLIO_URL}
+                  src={`${PORTFOLIO_URL}/preview`}
                   style={{
                     width: '100%',
                     height: 12000, // Altura extendida para soportar todo el contenido real (~11000px + margen)
