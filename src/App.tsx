@@ -32,14 +32,12 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // 2. Cargar datos desde Supabase SOLO si NO estamos en previsualización
+  // 2. Carga desde Supabase: Solo para rutas públicas (con slug)
   useEffect(() => {
-    // Si es modo preview, no cargamos de DB (el CMS nos enviará la data por postMessage)
-    if (isPreview) {
-      setLoading(false); // Dejamos de cargar, esperamos el mensaje
-      return;
-    }
-    
+    // Si estamos en modo preview, NUNCA cargamos de la base de datos automáticamente.
+    // Solo aceptamos datos vía postMessage del Editor.
+    if (isPreview) return;
+
     const fetchData = async () => {
       try {
         const targetSlug = slug || 'richard-falsone';
@@ -72,34 +70,40 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
     fetchData();
   }, [slug, isPreview]);
 
-  // En modo preview, si no hay data aún, mostramos carga pero permitimos que llegue el postMessage
-  if (loading && !cmsData && !isPreview) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
-        <div className="text-sm font-bold tracking-widest uppercase opacity-50 animate-pulse">
-          Cargando entorno impecable...
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !cmsData) {
+  // UI DE CARGA / ERROR (Público)
+  if (error && !cmsData && !isPreview) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
         <div className="text-center space-y-4">
-          <div className="text-4xl font-bold">404</div>
-          <div className="text-sm opacity-50 uppercase tracking-widest">Experto no encontrado</div>
+          <div className="text-4xl font-bold italic tracking-tighter uppercase opacity-30">404</div>
+          <div className="text-sm opacity-50 uppercase tracking-[0.3em] font-medium">Perfil no Encontrado</div>
+          <div className="text-[10px] opacity-20 uppercase">Verifica la URL o contacta al administrador</div>
         </div>
       </div>
     );
   }
 
-  // Si no hay data y es preview, mostramos un estado de espera elegante
-  if (!cmsData && isPreview) {
+  // Estado de espera para el Editor (Modo Preview)
+  if (isPreview && !cmsData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white overflow-hidden pointer-events-none">
+        <div className="relative flex flex-col items-center gap-6">
+          <div className="w-12 h-12 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin" />
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-blue-400 opacity-80 animate-pulse">Sincronización Activa</span>
+            <span className="text-[8px] font-medium tracking-[0.2em] uppercase text-white/30">Esperando datos desde el Editor CMS...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Cargador estándar (para el público)
+  if (loading && !cmsData && !isPreview) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
-        <div className="text-sm font-bold tracking-widest uppercase opacity-30">
-          Esperando datos del editor...
+        <div className="text-[10px] font-bold tracking-[0.5em] uppercase text-white/20 animate-pulse">
+          Desplegando Entorno Impecable
         </div>
       </div>
     );
@@ -107,6 +111,14 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
 
   return (
     <div className="relative min-h-screen bg-[var(--bg)]">
+      {isPreview && (
+        <div className="fixed top-4 right-4 z-[9999] pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 backdrop-blur-md border border-blue-500/30 rounded-full">
+            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping" />
+            <span className="text-[8px] font-bold uppercase tracking-widest text-blue-400">Preview Live</span>
+          </div>
+        </div>
+      )}
       <PageIntro />
       <ExecutiveLayout cmsData={cmsData} />
     </div>

@@ -493,37 +493,42 @@ export const EditorPage: React.FC = () => {
   }, [selectedBlockId, page, previewMode]);
 
   // ── PUENTE DE DATOS HACIA EL PORTAFOLIO (iframe) ──
+  // Envía datos al iframe SIEMPRE que `page` cambia (sin límite de tiempo)
   useEffect(() => {
+    if (!page) return;
+
     const syncData = () => {
       const iframes = document.querySelectorAll('iframe');
-      if (iframes.length === 0) return;
-      
       iframes.forEach(iframe => {
-        if (iframe?.contentWindow && page) {
-          // Enviamos a '*' para simplificar el cross-origin durante la migración
+        if (iframe?.contentWindow) {
           iframe.contentWindow.postMessage({ type: 'CMS_UPDATE_PAGE', page }, '*');
         }
       });
     };
 
+    // Enviar inmediatamente cuando page cambia
+    syncData();
+
+    // Mantener envío periódico durante los primeros 10 segundos para asegurar
+    // que el iframe esté listo (puede tardar en cargar)
+    const interval = setInterval(syncData, 500);
+    const timeout = setTimeout(() => clearInterval(interval), 10000);
+
     const handlePortfolioMessage = (event: MessageEvent) => {
+      // Cuando el iframe está listo, enviar datos inmediatamente
       if (event.data?.type === 'IFRAME_READY') {
         syncData();
       }
     };
 
     window.addEventListener('message', handlePortfolioMessage);
-    
-    // Sincronizar periódicamente los primeros segundos mientras carga el iframe
-    const interval = setInterval(syncData, 1000);
-    const timeout = setTimeout(() => clearInterval(interval), 5000);
 
     return () => {
       window.removeEventListener('message', handlePortfolioMessage);
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [page]);
+  }, [page]); // Se re-ejecuta CADA VEZ que page cambia
 
   // Auto-save every 60 seconds when dirty
   useEffect(() => {

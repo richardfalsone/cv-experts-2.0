@@ -129,8 +129,18 @@ const AnimatedNumber = ({ value }: { value: string }) => {
   );
 };
 
-export const StatsGrid = () => {
+export const StatsGrid = ({ data }: { data?: any[] }) => {
   const { t } = useLanguage();
+  
+  const defaultStats = [
+    { value: '30%', label: t('staffingEfficiency') || 'Staffing Efficiency' },
+    { value: '10+', label: t('projectsDone') },
+    { value: '15%', label: t('conversionRate') || 'Conversion Rate' },
+    { value: '5+', label: t('awards') }
+  ];
+
+  const stats = data || defaultStats;
+
   return (
     <section className="py-16 border-b border-[var(--border)] space-y-12">
       <div className="space-y-4">
@@ -138,12 +148,7 @@ export const StatsGrid = () => {
         <div className="h-1.5 w-12 bg-primary rounded-full" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
-        {[
-          { value: '30%', label: t('staffingEfficiency') || 'Staffing Efficiency' },
-          { value: '10+', label: t('projectsDone') },
-          { value: '15%', label: t('conversionRate') || 'Conversion Rate' },
-          { value: '5+', label: t('awards') }
-        ].map((stat, i) => (
+        {stats.map((stat, i) => (
           <div key={i} className="flex flex-col items-center gap-4 text-center group">
             <span className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter text-[var(--on-surface)] transition-apple group-hover:text-primary group-hover:scale-105">
               <AnimatedNumber value={stat.value} />
@@ -158,11 +163,11 @@ export const StatsGrid = () => {
   );
 };
 
-export const PortfolioGrid = () => {
+export const PortfolioGrid = ({ projects: propProjects }: { projects?: any[] }) => {
   const { t } = useLanguage();
   const [filter, setFilter] = React.useState('all');
   
-  const projects = [
+  const defaultProjects = [
     { title: 'NTT DATA Platform', category: 'uxDesign', image: 'https://picsum.photos/seed/ntt/800/600', impact: '+25% Staffing' },
     { title: 'Fintech App', category: 'uiDesign', image: 'https://picsum.photos/seed/fintech/800/600', impact: '+15% Conversion' },
     { title: 'E-commerce Redesign', category: 'uxDesign', image: 'https://picsum.photos/seed/shop/800/600', impact: '-20% Bounce' },
@@ -171,6 +176,7 @@ export const PortfolioGrid = () => {
     { title: 'SaaS Dashboard', category: 'uxDesign', image: 'https://picsum.photos/seed/saas/800/600', impact: '-30% Task Time' },
   ];
 
+  const projects = propProjects || defaultProjects;
   const filteredProjects = filter === 'all' ? projects : projects.filter(p => p.category === filter);
 
   return (
@@ -207,7 +213,7 @@ export const PortfolioGrid = () => {
           <PortfolioItem 
             key={i} 
             title={project.title} 
-            category={t(project.category as any)} 
+            category={t(project.category as any) || project.category} 
             image={project.image} 
             impact={project.impact} 
             onClick={() => window.open('https://www.linkedin.com/in/richard-falsone-896159144/', '_blank', 'noreferrer')}
@@ -218,10 +224,10 @@ export const PortfolioGrid = () => {
   );
 };
 
-export const HistorySection = () => {
+export const HistorySection = ({ education: propEducation, work: propWork }: { education?: any[], work?: any[] }) => {
   const { t, lang } = useLanguage();
   
-  const education = [
+  const defaultEducation = [
     {
       title: 'UMOV Academy',
       subtitle: lang === 'en' ? 'Bachelor in Experience Design Engineering & Innovation' : 'Licenciatura en Ingeniería en Diseño de Experiencias e Innovación',
@@ -236,7 +242,7 @@ export const HistorySection = () => {
     }
   ];
 
-  const work = [
+  const defaultWork = [
     {
       title: 'NTT DATA Europe & Latam',
       subtitle: 'Sr UX/UI Designer',
@@ -268,6 +274,9 @@ export const HistorySection = () => {
       description: lang === 'en' ? 'Print design, logos, and corporate identity.' : 'Diseño de impresión, logotipos e identidad corporativa.'
     }
   ];
+
+  const education = propEducation || defaultEducation;
+  const work = propWork || defaultWork;
 
   return (
     <section id="history" className="grid grid-cols-1 gap-16 md:gap-20 lg:gap-24 section-spacing">
