@@ -34,33 +34,35 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
 
   // 2. Carga desde Supabase: Solo para rutas públicas (con slug)
   useEffect(() => {
-    // Si estamos en modo preview, NUNCA cargamos de la base de datos automáticamente.
-    // Solo aceptamos datos vía postMessage del Editor.
     if (isPreview) return;
 
     const fetchData = async () => {
       try {
         const targetSlug = slug || 'richard-falsone';
-        
+
+        // Step 1: Find expert by slug
         const { data: expert, error: expertErr } = await supabase
           .from('experts')
-          .select('id')
+          .select('id, full_name, slug')
           .eq('slug', targetSlug)
-          .single();
+          .maybeSingle(); // maybeSingle() returns null instead of error when not found
 
-        if (expertErr || !expert) throw new Error('Experto no encontrado');
+        if (expertErr) throw new Error(`DB Error: ${expertErr.message}`);
+        if (!expert) throw new Error(`Perfil "${targetSlug}" no encontrado`);
 
+        // Step 2: Load the page for this expert
         const { data: page, error: pageErr } = await supabase
           .from('pages')
           .select('blocks, meta')
           .eq('expert_id', expert.id)
-          .single();
+          .maybeSingle();
 
-        if (pageErr || !page) throw new Error('Página no encontrada');
+        if (pageErr) throw new Error(`DB Error: ${pageErr.message}`);
+        if (!page) throw new Error(`No hay página publicada para "${expert.full_name}"`);
 
         setCmsData(page);
       } catch (err: any) {
-        console.error('Error cargando CV:', err.message);
+        console.error('[CVLoader] Error cargando CV:', err.message);
         setError(err.message);
       } finally {
         setLoading(false);
