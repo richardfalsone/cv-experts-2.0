@@ -288,7 +288,11 @@ const VersionsPanel: React.FC<{
 const DEVICE_WIDTHS = { desktop: '100%', tablet: 768, mobile: 390 } as const;
 type DeviceMode = keyof typeof DEVICE_WIDTHS;
 
-const PORTFOLIO_URL = import.meta.env.VITE_PORTFOLIO_URL || 'http://localhost:3000';
+// Production URL: set VITE_PORTFOLIO_URL in env, or falls back to known Vercel URL
+const PORTFOLIO_URL = import.meta.env.VITE_PORTFOLIO_URL 
+  || (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
+      ? 'https://cv-experts-2-0.vercel.app'
+      : 'http://localhost:3000');
 
 export const EditorPage: React.FC = () => {
   const { employeeId } = useParams<{ employeeId: string }>();

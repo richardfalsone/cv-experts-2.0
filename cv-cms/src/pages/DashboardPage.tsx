@@ -423,8 +423,8 @@ export const DashboardPage: React.FC = () => {
                         className="cms-btn-ghost"
                         style={{ flex: 1, fontSize: 12, padding: '8px 12px' }}
                         onClick={() => {
-                          const PORTFOLIO_URL = import.meta.env.VITE_PORTFOLIO_URL || 'http://localhost:3000';
-                          window.open(`${PORTFOLIO_URL}/cv/${emp.slug}`, '_blank');
+                          const url = `${import.meta.env.VITE_PORTFOLIO_URL || (window.location.hostname.includes('localhost') ? 'http://localhost:3000' : 'https://cv-experts-2-0.vercel.app')}/cv/${emp.slug}`;
+                          window.open(url, '_blank');
                         }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 15 }}>visibility</span>
