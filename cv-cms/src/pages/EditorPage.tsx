@@ -557,7 +557,7 @@ export const EditorPage: React.FC = () => {
 
   // Share link
   const handleShareLink = async () => {
-    const url = `${window.location.origin}/cv/${employee?.slug}`;
+    const url = `${PORTFOLIO_URL}/cv/${employee?.slug}`;
     try {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
@@ -707,7 +707,7 @@ export const EditorPage: React.FC = () => {
           </button>
 
           {/* Open public */}
-          <button className="cms-btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => window.open(`/cv/${employee?.slug}`, '_blank')} title="Ver CV público">
+          <button className="cms-btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => window.open(`${PORTFOLIO_URL}/cv/${employee?.slug}`, '_blank')} title="Ver CV público">
             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>open_in_new</span>
             Ver público
           </button>

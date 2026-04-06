@@ -422,7 +422,10 @@ export const DashboardPage: React.FC = () => {
                       <button
                         className="cms-btn-ghost"
                         style={{ flex: 1, fontSize: 12, padding: '8px 12px' }}
-                        onClick={() => window.open(`/cv/${emp.slug}`, '_blank')}
+                        onClick={() => {
+                          const PORTFOLIO_URL = import.meta.env.VITE_PORTFOLIO_URL || 'http://localhost:3000';
+                          window.open(`${PORTFOLIO_URL}/cv/${emp.slug}`, '_blank');
+                        }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 15 }}>visibility</span>
                         Ver CV
