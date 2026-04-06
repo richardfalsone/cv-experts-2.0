@@ -50,16 +50,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   signIn: async (email: string, password: string) => {
-    // Demo mode credentials
+    // ── MODO DEMO (Prioridad para fase de transición) ──
     const demoAccounts: Record<string, { pass: string; role: UserRole; spec?: Specialization }> = {
       'admin@re.com': { pass: 'admin123', role: 'admin' },
       'talent@re.com': { pass: 'talent123', role: 'talent', spec: 'ux_ui' },
       'sales@re.com': { pass: 'sales123', role: 'sales' },
     };
 
-    if (!import.meta.env.VITE_SUPABASE_URL || !demoAccounts[email]) {
-      const demo = demoAccounts[email];
-      if (demo && demo.pass === password) {
+    const demo = demoAccounts[email];
+    if (demo) {
+      if (demo.pass === password) {
         const user: User = { 
           id: `demo-${demo.role}`, 
           email, 
@@ -69,20 +69,23 @@ export const useAuthStore = create<AuthStore>((set) => ({
         localStorage.setItem('cms_admin_v2', JSON.stringify(user));
         set({ user });
         return null;
-      }
-      if (!import.meta.env.VITE_SUPABASE_URL) {
-        return 'Credenciales incorrectas.\nDemo: \n- admin@re.com / admin123\n- talent@re.com / talent123\n- sales@re.com / sales123';
+      } else {
+        return 'Contraseña de demo incorrecta.';
       }
     }
 
-    // Real Supabase auth
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return error.message;
-    if (data.user) {
-      const role = (data.user.user_metadata?.role as UserRole) || 'talent';
-      set({ user: { id: data.user.id, email: data.user.email!, role } });
+    // ── MODO PROFESIONAL (Supabase Auth) ──
+    if (import.meta.env.VITE_SUPABASE_URL) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return error.message;
+      if (data.user) {
+        const role = (data.user.user_metadata?.role as UserRole) || 'talent';
+        set({ user: { id: data.user.id, email: data.user.email!, role } });
+        return null;
+      }
     }
-    return null;
+
+    return 'Credenciales incorrectas.\nDemo: \n- admin@re.com / admin123\n- talent@re.com / talent123\n- sales@re.com / sales123';
   },
 
   signOut: async () => {
