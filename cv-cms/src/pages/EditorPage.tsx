@@ -496,25 +496,33 @@ export const EditorPage: React.FC = () => {
   useEffect(() => {
     const syncData = () => {
       const iframes = document.querySelectorAll('iframe');
+      if (iframes.length === 0) return;
+      
       iframes.forEach(iframe => {
         if (iframe?.contentWindow && page) {
+          // Enviamos a '*' para simplificar el cross-origin durante la migración
           iframe.contentWindow.postMessage({ type: 'CMS_UPDATE_PAGE', page }, '*');
         }
       });
     };
 
     const handlePortfolioMessage = (event: MessageEvent) => {
-      // El portafolio nos dice que está listo
       if (event.data?.type === 'IFRAME_READY') {
         syncData();
       }
     };
 
     window.addEventListener('message', handlePortfolioMessage);
-    // Sincronizar de inmediato si hay cambios
-    syncData();
+    
+    // Sincronizar periódicamente los primeros segundos mientras carga el iframe
+    const interval = setInterval(syncData, 1000);
+    const timeout = setTimeout(() => clearInterval(interval), 5000);
 
-    return () => window.removeEventListener('message', handlePortfolioMessage);
+    return () => {
+      window.removeEventListener('message', handlePortfolioMessage);
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [page]);
 
   // Auto-save every 60 seconds when dirty

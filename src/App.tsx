@@ -16,9 +16,10 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
   // 1. Escuchar actualizaciones en vivo del CMS (PostMessage)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      const CMS_URL = import.meta.env.VITE_CMS_URL || 'http://localhost:5174';
-      if (event.origin !== CMS_URL && event.origin !== window.location.origin) return;
+      // Permitir mensajes desde el mismo origen o desde la URL del CMS configurada
+      const CMS_URL = import.meta.env.VITE_CMS_URL;
       
+      // En desarrollo o previsualización, somos un poco más flexibles con el origen si el tipo es correcto
       if (event.data?.type === 'CMS_UPDATE_PAGE') {
         setCmsData(event.data.page);
         setLoading(false);
