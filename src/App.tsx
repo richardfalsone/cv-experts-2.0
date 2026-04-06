@@ -32,10 +32,13 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // 2. Cargar datos desde Supabase si NO estamos en previsualización o si el postMessage aún no llega
+  // 2. Cargar datos desde Supabase SOLO si NO estamos en previsualización
   useEffect(() => {
-    // Si es preview y ya tenemos data de postMessage, no buscamos en DB
-    if (isPreview && cmsData) return;
+    // Si es modo preview, no cargamos de DB (el CMS nos enviará la data por postMessage)
+    if (isPreview) {
+      setLoading(false); // Dejamos de cargar, esperamos el mensaje
+      return;
+    }
     
     const fetchData = async () => {
       try {
@@ -47,10 +50,7 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
           .eq('slug', targetSlug)
           .single();
 
-        if (expertErr || !expert) {
-          if (isPreview) return; // En preview ignoramos si no existe en DB todavía
-          throw new Error('Experto no encontrado');
-        }
+        if (expertErr || !expert) throw new Error('Experto no encontrado');
 
         const { data: page, error: pageErr } = await supabase
           .from('pages')
@@ -58,19 +58,14 @@ const CVLoader: React.FC<{ isPreview?: boolean }> = ({ isPreview }) => {
           .eq('expert_id', expert.id)
           .single();
 
-        if (pageErr || !page) {
-          if (isPreview) return;
-          throw new Error('Página no encontrada');
-        }
+        if (pageErr || !page) throw new Error('Página no encontrada');
 
         setCmsData(page);
       } catch (err: any) {
-        if (!isPreview) {
-          console.error('Error cargando CV:', err.message);
-          setError(err.message);
-        }
+        console.error('Error cargando CV:', err.message);
+        setError(err.message);
       } finally {
-        if (!isPreview || cmsData) setLoading(false);
+        setLoading(false);
       }
     };
 
