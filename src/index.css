@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+@import "tailwindcss";
+
+@theme {
+  /* Apple-inspired Design Tokens */
+  --color-primary: var(--theme-primary, #ffc107);
+  --color-on-primary: #000000;
+  
+  /* Dark Theme (NTT Data Inspired) */
+  --color-bg: #010610;
+  --color-surface: #0d1b35;
+  --color-surface-variant: #152243;
+  --color-on-surface: #e8f0ff;
+  --color-on-surface-muted: #7a96c2;
+  --color-border: rgba(0, 164, 255, 0.15);
+
+  /* Light Theme Overrides (Apple Light) */
+  --color-bg-light: #f2f2f7;
+  --color-surface-light: #ffffff;
+  --color-surface-variant-light: #e5e5ea;
+  --color-on-surface-light: #000000;
+  --color-on-surface-muted-light: #52525b; /* Darkened (zinc-600) to pass WCAG AA on white backgrounds */
+  --color-border-light: rgba(0, 0, 0, 0.1);
+
+  --font-display: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+
+  --shadow-arter: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --shadow-arter-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --theme-primary: #00a4ff;
+    --bg: var(--color-bg);
+    --surface: var(--color-surface);
+    --surface-variant: var(--color-surface-variant);
+    --on-surface: var(--color-on-surface);
+    --on-surface-muted: var(--color-on-surface-muted);
+    --border: var(--color-border);
+    
+    /* Native OS Color Scheme Binding */
+    color-scheme: dark;
+    
+    /* Spacing System (Apple-like) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+  }
+
+  .light {
+    color-scheme: light;
+    --theme-primary: #0078c8; /* NTT Data blue for light mode contrast */
+    --bg: var(--color-bg-light);
+    --surface: var(--color-surface-light);
+    --surface-variant: var(--color-surface-variant-light);
+    --on-surface: var(--color-on-surface-light);
+    --on-surface-muted: var(--color-on-surface-muted-light);
+    --border: var(--color-border-light);
+    --shadow-arter: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+    --shadow-arter-lg: 0 16px 48px rgba(0, 0, 0, 0.1);
+  }
+
+  body {
+    @apply bg-[var(--bg)] text-[var(--on-surface)] font-sans antialiased transition-colors duration-700 selection:bg-primary selection:text-on-primary;
+    letter-spacing: -0.011em;
+  }
+
+  /* Accessibility: Focus States */
+  :focus-visible {
+    @apply outline-2 outline-offset-4 outline-primary;
+  }
+
+  h1 {
+    @apply text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight;
+    line-height: 1.05;
+  }
+
+  h2 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
+    line-height: 1.1;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl font-semibold tracking-tight;
+  }
+
+  p {
+    @apply leading-relaxed text-[var(--on-surface-muted)] text-base md:text-lg font-normal;
+  }
+}
+
+.arter-card {
+  @apply bg-[var(--surface)] p-8 md:p-10 shadow-arter transition-all duration-700 rounded-[var(--radius-xl)] border border-[var(--border)] hover:scale-[1.02] active:scale-[0.98];
+  backdrop-filter: blur(20px);
+}
+
+.glass {
+  @apply bg-[var(--surface)]/70 backdrop-blur-2xl border border-[var(--border)];
+}
+
+.arter-progress-bg {
+  @apply h-1.5 w-full bg-[var(--surface-variant)] rounded-full overflow-hidden;
+}
+
+.arter-progress-fill {
+  @apply h-full bg-primary transition-all duration-1000 ease-out rounded-full;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Keep scrollbar-hide active from tailwind or defined above */
+
+.transition-apple {
+  transition: all 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.transition-md3 {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pill-shape {
+  border-radius: 9999px;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  html, body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .arter-card, .glass {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  .scrollbar-hide {
+    overflow: visible !important;
+  }
+}
