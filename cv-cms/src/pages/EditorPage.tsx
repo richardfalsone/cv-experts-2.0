@@ -11,7 +11,8 @@ import { useEditorStore } from '../stores/editorStore';
 import { useVersionStore } from '../stores/versionStore';
 import { useAuthStore } from '../stores/authStore';
 import { FALSONE_TEMPLATE } from '../data/defaultTemplate';
-import type { CVBlock } from '../types/cv.types';
+import { supabase } from '../lib/supabase';
+import type { CVBlock, CVPage } from '../types/cv.types';
 import { BlockPropertyPanel } from '../components/BlockPropertyPanel';
 import { AISettingsPanel } from '../components/AISettingsPanel';
 import { BlockPalette } from '../components/BlockPalette';
@@ -318,15 +319,48 @@ export const EditorPage: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
-    // Load employee info
-    const employees = JSON.parse(localStorage.getItem('cms_employees') || '[]');
-    const emp = employees.find((e: any) => e.id === employeeId);
-    setEmployee(emp);
+    // ── CARGAR DATOS DESDE SUPABASE ──
+    const loadInitialData = async () => {
+      if (!employeeId) return;
+      try {
+        // 1. Cargar el experto
+        const { data: exp, error: expErr } = await supabase
+          .from('experts')
+          .select('*')
+          .eq('id', employeeId)
+          .single();
 
-    // Load page
-    const pages = JSON.parse(localStorage.getItem('cms_pages') || '{}');
-    const p = pages[employeeId!];
-    setPage(p || { ...FALSONE_TEMPLATE, id: `page-${Date.now()}`, employeeId: employeeId! });
+        if (expErr) throw expErr;
+        setEmployee({
+          id: exp.id,
+          fullName: exp.full_name,
+          slug: exp.slug,
+          email: exp.email,
+          isPublished: exp.is_published
+        });
+
+        // 2. Cargar la página
+        const { data: p, error: pErr } = await supabase
+          .from('pages')
+          .select('*')
+          .eq('expert_id', employeeId)
+          .single();
+
+        if (pErr) throw pErr;
+        setPage({
+          id: p.id,
+          employeeId: p.expert_id,
+          blocks: p.blocks,
+          meta: p.meta,
+          templateId: 'falsone',
+          version: 1
+        } as CVPage);
+      } catch (err: any) {
+        toast.add(`Error cargando el editor: ${err.message}`, 'error');
+      }
+    };
+
+    loadInitialData();
   }, [employeeId, setPage]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -340,17 +374,31 @@ export const EditorPage: React.FC = () => {
     if (!page || !employeeId) return;
     setIsSaving(true);
     try {
-      const pages = JSON.parse(localStorage.getItem('cms_pages') || '{}');
-      pages[employeeId] = { ...page, updatedAt: new Date().toISOString() };
-      localStorage.setItem('cms_pages', JSON.stringify(pages));
+      // ── GUARDAR EN SUPABASE ──
+      const { error } = await supabase
+        .from('pages')
+        .update({
+          blocks: page.blocks,
+          meta: page.meta,
+          updated_at: new Date().toISOString()
+        })
+        .eq('expert_id', employeeId);
 
-      // Save auto-snapshot
+      if (error) throw error;
+
+      // También actualizamos el objeto 'updated_at' del experto
+      await supabase
+        .from('experts')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', employeeId);
+
+      // Save version snapshot (as historical record)
       saveSnapshot(employeeId, page.blocks, isAutoSave ? undefined : `Guardado manual ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, false);
 
       markSaved();
-      if (!isAutoSave) toast.add('Cambios guardados correctamente', 'success');
-    } catch {
-      toast.add('Error al guardar. Inténtalo de nuevo.', 'error');
+      if (!isAutoSave) toast.add('Cambios guardados e impecablemente sincronizados', 'success');
+    } catch (err: any) {
+      toast.add(`Error al guardar: ${err.message}`, 'error');
     } finally {
       setTimeout(() => setIsSaving(false), 500);
     }
@@ -361,7 +409,7 @@ export const EditorPage: React.FC = () => {
     try {
       await handleSave();
       saveSnapshot(employeeId, page.blocks, `Borrador ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, true);
-      toast.add('Borrador guardado', 'info');
+      toast.add('Borrador guardado localmente', 'info');
     } catch {
       toast.add('Error al guardar borrador', 'error');
     }
@@ -370,26 +418,40 @@ export const EditorPage: React.FC = () => {
   const handlePublish = async () => {
     if (!page || !employeeId) return;
     try {
-      // 1. Save first
-      const pages = JSON.parse(localStorage.getItem('cms_pages') || '{}');
-      pages[employeeId] = { ...page, updatedAt: new Date().toISOString() };
-      localStorage.setItem('cms_pages', JSON.stringify(pages));
-      markSaved();
+      // 1. Guardar cambios primero
+      const { error: pageErr } = await supabase
+        .from('pages')
+        .update({
+          blocks: page.blocks,
+          meta: page.meta,
+          updated_at: new Date().toISOString()
+        })
+        .eq('expert_id', employeeId);
 
-      // 2. Create publish snapshot
+      if (pageErr) throw pageErr;
+
+      // 2. Marcar como publicado en la tabla de expertos
+      const { error: expErr } = await supabase
+        .from('experts')
+        .update({ 
+          is_published: true, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', employeeId);
+
+      if (expErr) throw expErr;
+
+      // 3. Crear snapshot de versión
       const snapId = saveSnapshot(employeeId, page.blocks, `Publicado ${new Date().toLocaleDateString('es-MX', { dateStyle: 'short' })}`, false);
       markAsPublished(snapId);
 
-      // 3. Update employee publish status
-      const employees = JSON.parse(localStorage.getItem('cms_employees') || '[]');
-      const updated = employees.map((e: any) =>
-        e.id === employeeId ? { ...e, isPublished: true, updatedAt: new Date().toISOString() } : e
-      );
-      localStorage.setItem('cms_employees', JSON.stringify(updated));
+      // Actualizar estado local para UI
+      setEmployee((prev: any) => ({ ...prev, isPublished: true }));
+      markSaved();
 
-      toast.add(`CV de ${employee?.fullName || 'empleado'} publicado exitosamente`, 'success', 5000);
-    } catch {
-      toast.add('Error al publicar. Inténtalo de nuevo.', 'error');
+      toast.add(`¡CV de ${employee?.fullName || 'experto'} publicado e impecable en la nube!`, 'success', 5000);
+    } catch (err: any) {
+      toast.add(`Error al publicar: ${err.message}`, 'error');
     }
   };
 

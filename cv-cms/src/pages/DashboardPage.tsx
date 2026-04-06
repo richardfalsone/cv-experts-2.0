@@ -1,39 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
 import { useVersionStore } from '../stores/versionStore';
 import type { Employee } from '../types/cv.types';
 import { FALSONE_TEMPLATE } from '../data/defaultTemplate';
+import { supabase } from '../lib/supabase';
 import {
   useToast, CMSModal, CMSInput, CMSStatusBadge,
   CMSConfirmDialog, CMSSearchInput, CMSSelect, CMSIconButton,
 } from '../components/CMSAtoms';
 import { PermissionGate } from '../components/PermissionGate';
-
-const getEmployees = (): Employee[] => {
-  const stored = localStorage.getItem('cms_employees');
-  if (stored) return JSON.parse(stored);
-  const defaults: Employee[] = [
-    {
-      id: 'emp-001',
-      fullName: 'Richard Falsone',
-      slug: 'richard-falsone',
-      email: 'hola@richardfalsone.com',
-      avatarUrl: 'https://i.pravatar.cc/150?u=richard',
-      isPublished: true,
-      role: 'talent',
-      specialization: 'ux_ui',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
-  localStorage.setItem('cms_employees', JSON.stringify(defaults));
-  return defaults;
-};
-
-const saveEmployees = (employees: Employee[]) =>
-  localStorage.setItem('cms_employees', JSON.stringify(employees));
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,7 +19,8 @@ export const DashboardPage: React.FC = () => {
   const toast = useToast();
   const { getSnapshots } = useVersionStore();
 
-  const [employees, setEmployees] = useState<Employee[]>(getEmployees);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
@@ -51,6 +29,43 @@ export const DashboardPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>('date');
+
+  // ── CARGAR EMPLEADOS DESDE SUPABASE ──
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('experts')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Mapear snake_case de DB a camelCase de tipos
+      const mapped: Employee[] = (data || []).map(d => ({
+        id: d.id,
+        fullName: d.full_name,
+        slug: d.slug,
+        email: d.email,
+        avatarUrl: d.avatar_url,
+        isPublished: d.is_published,
+        role: d.role,
+        specialization: d.specialization,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      }));
+
+      setEmployees(mapped);
+    } catch (err: any) {
+      toast.add(`Error cargando expertos: ${err.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
   // Filtered & sorted employees
   const displayed = useMemo(() => {
@@ -76,81 +91,131 @@ export const DashboardPage: React.FC = () => {
     return list;
   }, [employees, search, filter, sortBy]);
 
-  const createEmployee = () => {
+  const createEmployee = async () => {
     if (!newName.trim()) { toast.add('El nombre es requerido', 'error'); return; }
     const slug = newName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    if (employees.some(e => e.slug === slug)) { toast.add('Ya existe un empleado con ese nombre', 'error'); return; }
+    
+    if (employees.some(e => e.slug === slug)) { 
+      toast.add('Ya existe un experto con ese nombre', 'error'); 
+      return; 
+    }
 
-    const emp: Employee = {
-      id: `emp-${Date.now()}`,
-      fullName: newName.trim(),
-      slug,
-      email: newEmail.trim(),
-      isPublished: false,
-      role: 'talent',
-      specialization: newRole as any,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      // 1. Crear el experto
+      const { data: newExpert, error: expErr } = await supabase
+        .from('experts')
+        .insert([{
+          full_name: newName.trim(),
+          slug,
+          email: newEmail.trim(),
+          role: 'talent',
+          specialization: newRole,
+          is_published: false
+        }])
+        .select()
+        .single();
 
-    // Clone Falsone template for this employee
-    const page = { ...FALSONE_TEMPLATE, id: `page-${Date.now()}`, employeeId: emp.id };
-    const pages = JSON.parse(localStorage.getItem('cms_pages') || '{}');
-    pages[emp.id] = page;
-    localStorage.setItem('cms_pages', JSON.stringify(pages));
+      if (expErr) throw expErr;
 
-    const updated = [...employees, emp];
-    setEmployees(updated);
-    saveEmployees(updated);
-    toast.add(`CV de ${emp.fullName} creado exitosamente`, 'success');
-    setShowNewModal(false);
-    setNewName('');
-    setNewEmail('');
-    setNewRole('ux_ui');
+      // 2. Crear la página inicial con el template
+      const { error: pageErr } = await supabase
+        .from('pages')
+        .insert([{
+          expert_id: newExpert.id,
+          blocks: FALSONE_TEMPLATE.blocks,
+          meta: FALSONE_TEMPLATE.meta
+        }]);
 
-    // Navigate to editor
-    navigate(`/editor/${emp.id}`);
+      if (pageErr) throw pageErr;
+
+      toast.add(`CV de ${newExpert.full_name} creado exitosamente`, 'success');
+      setShowNewModal(false);
+      setNewName('');
+      setNewEmail('');
+      setNewRole('ux_ui');
+      fetchEmployees(); // Recargar lista
+      
+      navigate(`/editor/${newExpert.id}`);
+    } catch (err: any) {
+      toast.add(`Error al crear: ${err.message}`, 'error');
+    }
   };
 
-  const deleteEmployee = (id: string) => {
-    const updated = employees.filter(e => e.id !== id);
-    setEmployees(updated);
-    saveEmployees(updated);
-    toast.add('CV eliminado', 'info');
-    setShowDeleteConfirm(null);
+  const deleteEmployee = async (id: string) => {
+    try {
+      const { error } = await supabase.from('experts').delete().eq('id', id);
+      if (error) throw error;
+      
+      toast.add('CV eliminado', 'info');
+      setShowDeleteConfirm(null);
+      fetchEmployees();
+    } catch (err: any) {
+      toast.add(`Error al eliminar: ${err.message}`, 'error');
+    }
   };
 
-  const togglePublish = (id: string) => {
+  const togglePublish = async (id: string) => {
     const emp = employees.find(e => e.id === id);
     if (!emp) return;
-    const updated = employees.map(e =>
-      e.id === id ? { ...e, isPublished: !e.isPublished, updatedAt: new Date().toISOString() } : e
-    );
-    setEmployees(updated);
-    saveEmployees(updated);
-    toast.add(emp.isPublished ? 'CV despublicado' : `CV de ${emp.fullName} publicado`, emp.isPublished ? 'info' : 'success');
+
+    try {
+      const { error } = await supabase
+        .from('experts')
+        .update({ is_published: !emp.isPublished, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.add(emp.isPublished ? 'CV despublicado' : `CV de ${emp.fullName} publicado`, emp.isPublished ? 'info' : 'success');
+      fetchEmployees();
+    } catch (err: any) {
+      toast.add(`Error al actualizar: ${err.message}`, 'error');
+    }
   };
 
-  const duplicateEmployee = (emp: Employee) => {
-    const newEmp: Employee = {
-      ...emp,
-      id: `emp-${Date.now()}`,
-      fullName: `${emp.fullName} (copia)`,
-      slug: `${emp.slug}-copy-${Date.now()}`,
-      isPublished: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  const duplicateEmployee = async (emp: Employee) => {
+    try {
+      // 1. Fetch current blocks/meta
+      const { data: page, error: fetchErr } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('expert_id', emp.id)
+        .single();
+        
+      if (fetchErr) throw fetchErr;
 
-    // Copy page
-    const pages = JSON.parse(localStorage.getItem('cms_pages') || '{}');
-    if (pages[emp.id]) pages[newEmp.id] = { ...pages[emp.id], id: `page-${Date.now()}`, employeeId: newEmp.id };
-    localStorage.setItem('cms_pages', JSON.stringify(pages));
+      // 2. Create new expert
+      const { data: newExpert, error: expErr } = await supabase
+        .from('experts')
+        .insert([{
+          full_name: `${emp.fullName} (copia)`,
+          slug: `${emp.slug}-copy-${Date.now()}`,
+          email: emp.email,
+          role: emp.role,
+          specialization: emp.specialization,
+          is_published: false
+        }])
+        .select()
+        .single();
+        
+      if (expErr) throw expErr;
 
-    const updated = [...employees, newEmp];
-    setEmployees(updated);
-    saveEmployees(updated);
-    toast.add(`CV duplicado como "${newEmp.fullName}"`, 'success');
+      // 3. Create new page content
+      const { error: pageErr } = await supabase
+        .from('pages')
+        .insert([{
+          expert_id: newExpert.id,
+          blocks: page.blocks,
+          meta: page.meta
+        }]);
+
+      if (pageErr) throw pageErr;
+
+      toast.add('CV duplicado', 'success');
+      fetchEmployees();
+    } catch (err: any) {
+      toast.add(`Error al duplicar: ${err.message}`, 'error');
+    }
   };
 
   const stats = {
