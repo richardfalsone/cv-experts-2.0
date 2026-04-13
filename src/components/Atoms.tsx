@@ -1,7 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 // Reusable scroll-triggered reveal wrapper
 export const ScrollReveal: React.FC<{

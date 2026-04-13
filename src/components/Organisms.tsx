@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { 
   Icon, 
@@ -129,7 +129,7 @@ const AnimatedNumber = ({ value }: { value: string }) => {
   );
 };
 
-export const StatsGrid = ({ data }: { data?: any[] }) => {
+export const StatsGrid = ({ data, title }: { data?: any[], title?: string }) => {
   const { t } = useLanguage();
   
   const defaultStats = [
@@ -142,9 +142,9 @@ export const StatsGrid = ({ data }: { data?: any[] }) => {
   const stats = data || defaultStats;
 
   return (
-    <section className="py-16 border-b border-[var(--border)] space-y-12">
+    <section id="stats" className="py-16 border-b border-[var(--border)] space-y-12">
       <div className="space-y-4">
-        <h3 className="font-bold uppercase tracking-[3px] text-primary">{t('relevantData') || 'Relevant Data'}</h3>
+        <h3 className="font-bold uppercase tracking-[3px] text-primary">{title || t('relevantData') || 'Relevant Data'}</h3>
         <div className="h-1.5 w-12 bg-primary rounded-full" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
@@ -163,7 +163,16 @@ export const StatsGrid = ({ data }: { data?: any[] }) => {
   );
 };
 
-export const PortfolioGrid = ({ projects: propProjects }: { projects?: any[] }) => {
+
+export const PortfolioGrid = ({ 
+  projects: propProjects,
+  title,
+  subtitle
+}: { 
+  projects?: any[],
+  title?: string,
+  subtitle?: string
+}) => {
   const { t } = useLanguage();
   const [filter, setFilter] = React.useState('all');
   
@@ -183,8 +192,8 @@ export const PortfolioGrid = ({ projects: propProjects }: { projects?: any[] }) 
     <section id="portfolio" className="space-y-16 section-spacing">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-12 border-b border-[var(--border)] pb-8">
         <div className="space-y-4">
-          <h3 className="text-[13px] font-bold uppercase tracking-[4px] text-primary">{t('portfolioTitle')}</h3>
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--on-surface)]">{t('selectedWorks') || 'Selected Works'}</h2>
+          <h3 className="text-[13px] font-bold uppercase tracking-[4px] text-primary">{title || t('portfolioTitle')}</h3>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--on-surface)]">{subtitle || t('selectedWorks') || 'Selected Works'}</h2>
         </div>
         <nav className="flex gap-8 text-[12px] font-bold uppercase tracking-[2px]" aria-label="Portfolio filters">
           {['all', 'uiDesign', 'uxDesign', 'branding'].map((cat) => (
@@ -216,7 +225,6 @@ export const PortfolioGrid = ({ projects: propProjects }: { projects?: any[] }) 
             category={t(project.category as any) || project.category} 
             image={project.image} 
             impact={project.impact} 
-            onClick={() => window.open('https://www.linkedin.com/in/richard-falsone-896159144/', '_blank', 'noreferrer')}
           />
         ))}
       </div>
@@ -224,7 +232,18 @@ export const PortfolioGrid = ({ projects: propProjects }: { projects?: any[] }) 
   );
 };
 
-export const HistorySection = ({ education: propEducation, work: propWork }: { education?: any[], work?: any[] }) => {
+
+export const HistorySection = ({ 
+  education: propEducation, 
+  work: propWork,
+  title,
+  educationTitle
+}: { 
+  education?: any[], 
+  work?: any[],
+  title?: string,
+  educationTitle?: string
+}) => {
   const { t, lang } = useLanguage();
   
   const defaultEducation = [
@@ -279,32 +298,81 @@ export const HistorySection = ({ education: propEducation, work: propWork }: { e
   const work = propWork || defaultWork;
 
   return (
-    <section id="history" className="grid grid-cols-1 gap-16 md:gap-20 lg:gap-24 section-spacing">
-      <div className="space-y-10 md:space-y-12 lg:space-y-14">
-        <div className="space-y-4">
-          <h3 className="font-bold uppercase tracking-[3px] text-primary">{t('education')}</h3>
-          <div className="h-1.5 w-12 bg-primary rounded-full" />
+    <section id="history" className="section-spacing">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+        <div className="space-y-12">
+          <div className="space-y-4">
+            <h3 className="font-bold uppercase tracking-[3px] text-primary">{educationTitle || t('education')}</h3>
+            <div className="h-1.5 w-12 bg-primary rounded-full" />
+          </div>
+          <div className="space-y-0">
+            {(education || []).map((item, i) => (
+              <HistoryItem 
+                key={i} 
+                title={item?.title || item?.role || ''} 
+                subtitle={item?.subtitle || item?.company || ''} 
+                date={item?.date || item?.period || ''} 
+                description={item?.description || ''}
+                isLast={i === (education?.length || 0) - 1} 
+              />
+            ))}
+          </div>
         </div>
-        <div className="space-y-0">
-          {education.map((item, i) => (
-            <HistoryItem key={i} {...item} isLast={i === education.length - 1} />
-          ))}
-        </div>
-      </div>
-      <div className="space-y-10 md:space-y-12 lg:space-y-14">
-        <div className="space-y-4">
-          <h3 className="font-bold uppercase tracking-[3px] text-primary">{t('workHistory')}</h3>
-          <div className="h-1.5 w-12 bg-primary rounded-full" />
-        </div>
-        <div className="space-y-0">
-          {work.map((item, i) => (
-            <HistoryItem key={i} {...item} isLast={i === work.length - 1} />
-          ))}
+        <div className="space-y-12">
+          <div className="space-y-4">
+            <h3 className="font-bold uppercase tracking-[3px] text-primary">{title || t('workHistory')}</h3>
+            <div className="h-1.5 w-12 bg-primary rounded-full" />
+          </div>
+          <div className="space-y-0">
+            {(work || []).map((item, i) => (
+              <HistoryItem 
+                key={i} 
+                title={item?.role || item?.title || ''} 
+                subtitle={item?.company || item?.subtitle || ''} 
+                date={item?.period || item?.date || ''} 
+                description={item?.description || ''} 
+                isLast={i === (work?.length || 0) - 1} 
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
+
+export const CertificationsSection = ({ title, items }: { title?: string, items?: any[] }) => (
+  <section id="certifications" className="section-spacing">
+    <div className="arter-card p-12 space-y-12 relative overflow-hidden">
+      <div className="flex items-center justify-between">
+        <h4 className="text-[10px] font-bold text-primary uppercase tracking-[3px]">
+          {title || "Certificaciones"}
+        </h4>
+        <div className="bg-[#0d1b35] px-3 py-1 rounded-full border border-[var(--border)] text-[9px] font-bold text-[var(--on-surface-muted)]">
+          {(items || []).length}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-12">
+        {(items || []).map((cert: any, i: number) => (
+          <div key={i} className="flex flex-col gap-3 group">
+             <div className="flex items-center gap-5">
+               <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center transition-colors border border-primary/20">
+                  <Icon name="check" className="text-primary !text-[10px] font-bold" />
+               </div>
+               <h5 className="text-[15px] font-bold text-white tracking-tight group-hover:text-primary transition-colors">{cert.title}</h5>
+             </div>
+             <div className="pl-10 flex items-center gap-3 text-[10px] font-bold text-[var(--on-surface-muted)] uppercase tracking-[1px]">
+               <span>{cert.issuer}</span>
+               <span className="w-1 h-1 bg-[var(--border)] rounded-full" />
+               <span>{cert.date}</span>
+             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
 
 export const ClientsSection = () => {
   const { t } = useLanguage();

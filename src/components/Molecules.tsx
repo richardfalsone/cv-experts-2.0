@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { Icon } from './Atoms';
 import { useLanguage } from '../lib/LanguageContext';
@@ -229,7 +229,14 @@ export const PortfolioItem: React.FC<{ title: string; category: string; image: s
   </div>
 );
 
-export const HistoryItem: React.FC<{ title: string; subtitle: string; date: string; description: string; isLast?: boolean; inCarousel?: boolean }> = ({ title, subtitle, date, description, isLast, inCarousel }) => (
+export const HistoryItem: React.FC<{ title: string; subtitle: string; date: string; description: string; isLast?: boolean; inCarousel?: boolean }> = ({ 
+  title = '', 
+  subtitle = '', 
+  date = '', 
+  description = '', 
+  isLast, 
+  inCarousel 
+}) => (
   <div className={cn("relative pb-12 md:pb-16", inCarousel ? "pl-0 md:pl-12" : "pl-10 md:pl-12")}>
     {!isLast && <div className={cn("absolute left-[9px] top-4 bottom-0 w-[2px] bg-[var(--border)]", inCarousel && "hidden md:block")} aria-hidden="true" />}
     <div className={cn("absolute left-0 top-3 w-[20px] h-[20px] rounded-full bg-[var(--bg)] border-4 border-primary shadow-md z-10 transition-transform group-hover:scale-125", inCarousel && "hidden md:block")} aria-hidden="true" />

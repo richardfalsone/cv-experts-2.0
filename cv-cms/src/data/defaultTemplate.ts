@@ -42,6 +42,18 @@ Directrices de respuesta:
 - Por ejemplo, si te preguntan "¿Quién eres?", responde simplemente: "Hola, soy Richard Falsone, Senior UX/UI Designer trabajando en NTT DATA. ¿En qué te puedo apoyar hoy?" y nada más.
 - Responde SIEMPRE en el idioma en que el usuario te hable.`,
     },
+    navigationLabels: {
+      home: 'Inicio',
+      portfolio: 'Trabajos',
+      history: 'Historia',
+      contact: 'Contacto',
+      blog: 'Blog'
+    },
+    headerConfig: {
+      showNav: true,
+      showSocial: true,
+      sticky: true
+    }
   },
   blocks: [
     {
@@ -63,6 +75,7 @@ Directrices de respuesta:
       order: 1,
       visible: true,
       props: {
+        title: 'Experiencia en:',
         items: [
           {
             title: 'UX Design',
@@ -87,11 +100,31 @@ Directrices de respuesta:
       },
     },
     {
+      id: 'block-skills-chart',
+      type: 'skills_chart',
+      order: 1.5,
+      visible: true,
+      props: {
+        title: 'Benchmarking de Habilidades',
+        skills: [
+          { label: 'UX', value: 95 },
+          { label: 'UI', value: 90 },
+          { label: 'Research', value: 85 },
+          { label: 'Strategy', value: 92 },
+          { label: 'Systems', value: 88 },
+          { label: 'Agile', value: 80 },
+        ],
+        seniorData: [80, 80, 75, 85, 80, 75],
+      },
+    },
+    {
       id: 'block-portfolio',
       type: 'portfolio',
       order: 2,
       visible: true,
       props: {
+        title: 'Portafolio',
+        subtitle: 'Selected Works',
         items: [
           { title: 'NTT DATA Platform', image: 'https://picsum.photos/seed/ntt/800/600', description: 'Sistema interno para NTT DATA.', category: 'uxDesign', impact: '+25% Staffing', tags: [] },
           { title: 'Fintech App', image: 'https://picsum.photos/seed/fintech/800/600', description: 'App de servicios financieros.', category: 'uiDesign', impact: '+15% Conversion', tags: [] },
@@ -105,6 +138,7 @@ Directrices de respuesta:
       order: 3,
       visible: true,
       props: {
+        title: 'Información Personal',
         email: 'hola@richardfalsone.com',
         phone: '+52 999 000 0000',
         workMode: 'Remoto',
@@ -116,6 +150,7 @@ Directrices de respuesta:
       order: 3.1,
       visible: true,
       props: {
+        title: 'Idiomas',
         languages: [
           { name: 'SPANISH', level: 100 },
           { name: 'ENGLISH', level: 90 },
@@ -128,6 +163,7 @@ Directrices de respuesta:
       order: 3.2,
       visible: true,
       props: {
+        title: 'Aptitudes Principales',
         items: [
           'Herramientas de diseño',
           'Aplicaciones móviles',
@@ -146,6 +182,7 @@ Directrices de respuesta:
       order: 3.3,
       visible: true,
       props: {
+        title: 'Certificaciones',
         items: [
           { title: 'Introduction to Generative AI - Español', issuer: 'GOOGLE', date: 'APR 2024' },
           { title: 'Workshop Variables', issuer: 'INTERFACE SCHOOL', date: 'MAY 2024' },
@@ -159,6 +196,7 @@ Directrices de respuesta:
       order: 3.4,
       visible: true,
       props: {
+        title: 'Datos Relevantes',
         stats: [
           { value: '30%', label: 'STAFFING EFFICIENCY', icon: '' },
           { value: '10+', label: 'PROJECTS DONE', icon: '' },
@@ -172,14 +210,31 @@ Directrices de respuesta:
       order: 4,
       visible: true,
       props: {
+        title: 'Trayectoria Profesional',
+        educationTitle: 'Educación',
         items: [
           {
             role: 'Sr UX/UI Designer',
             company: 'NTT DATA Europe & Latam',
             period: '2022 - Present',
-            description: 'Leading design projects from user research to final visual design.',
+            description: 'Leading design projects from user research to final visual design. Specialized in Design Systems and Atomic Design.',
             icon: 'work',
           },
+          {
+            role: 'UX/UI Designer',
+            company: 'DaCodes',
+            period: '2021 - 2021',
+            description: 'Designing intuitive solutions for complex needs. Concept and usability testing.',
+            icon: 'work',
+          }
+        ],
+        education: [
+          {
+            title: 'UMOV Academy',
+            subtitle: 'Bachelor in Experience Design Engineering & Innovation',
+            date: '2023 - 2026',
+            description: 'Focusing on innovation and user-centered design methodologies.'
+          }
         ],
       },
     },
@@ -189,6 +244,7 @@ Directrices de respuesta:
       order: 5,
       visible: true,
       props: {
+        title: 'Recomendaciones',
         items: [
           { name: 'Paulina G.', role: 'Product Manager @ NTT DATA', text: 'Richard es un diseñador excepcional.', avatar: 'https://i.pravatar.cc/150?u=paulina', rating: 5 },
           { name: 'Carlos R.', role: 'Lead Developer @ DaCodes', text: 'Trabajar con Richard fue una gran experiencia.', avatar: 'https://i.pravatar.cc/150?u=carlos', rating: 5 },
@@ -201,9 +257,37 @@ Directrices de respuesta:
       order: 6,
       visible: true,
       props: {
+        title: '¿Hablamos?',
         email: 'hola@richardfalsone.com',
         headline: '¿Listo para colaborar?',
         subtext: 'Siempre abierto a nuevos proyectos y oportunidades. ¡Hablemos!',
+      },
+    },
+    {
+      id: 'block-blog',
+      type: 'blog',
+      order: 5.5,
+      visible: true,
+      props: {
+        title: 'Artículos / Blog',
+        items: [
+          {
+            id: 'trends-2025',
+            title: 'Tendencias de Diseño 2025',
+            description: 'Explorando la IA y los cambios en la UI espacial.',
+            image: 'https://picsum.photos/seed/blog2/800/600',
+            date: 'OCT 2024',
+            category: 'Diseño'
+          },
+          {
+            id: 'vibe-coding',
+            title: 'Vibe Coding',
+            description: 'Reflexiones sobre la interactividad y la intuición en el diseño.',
+            image: 'https://picsum.photos/seed/blog1/800/600',
+            date: 'AUG 2024',
+            category: 'Tecnología'
+          }
+        ],
       },
     },
     {

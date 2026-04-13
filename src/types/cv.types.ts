@@ -32,6 +32,8 @@ export interface BlockBase {
 export interface HeroBlock extends BlockBase {
   type: 'hero';
   props: {
+    title?: string;
+    subtitle?: string;
     name: string;
     role: string;
     location: string;
@@ -43,6 +45,8 @@ export interface HeroBlock extends BlockBase {
 export interface InfoCardBlock extends BlockBase {
   type: 'info_card';
   props: {
+    title?: string;
+    subtitle?: string;
     email: string;
     phone: string;
     workMode: string;
@@ -52,6 +56,8 @@ export interface InfoCardBlock extends BlockBase {
 export interface LanguagesBlock extends BlockBase {
   type: 'languages';
   props: {
+    title?: string;
+    subtitle?: string;
     languages: Array<{ name: string; level: number }>;
   };
 }
@@ -59,13 +65,18 @@ export interface LanguagesBlock extends BlockBase {
 export interface SkillsChartBlock extends BlockBase {
   type: 'skills_chart';
   props: {
+    title?: string;
+    subtitle?: string;
     skills: Array<{ label: string; value: number }>;
+    seniorData?: number[];
   };
 }
 
 export interface AptitudesBlock extends BlockBase {
   type: 'aptitudes';
   props: {
+    title?: string;
+    subtitle?: string;
     items: string[];
   };
 }
@@ -73,6 +84,8 @@ export interface AptitudesBlock extends BlockBase {
 export interface StatsBlock extends BlockBase {
   type: 'stats';
   props: {
+    title?: string;
+    subtitle?: string;
     stats: Array<{ value: string; label: string; icon: string }>;
   };
 }
@@ -80,6 +93,9 @@ export interface StatsBlock extends BlockBase {
 export interface ExperienceBlock extends BlockBase {
   type: 'experience';
   props: {
+    title?: string;
+    subtitle?: string;
+    educationTitle?: string;
     items: Array<{
       role: string;
       company: string;
@@ -87,12 +103,20 @@ export interface ExperienceBlock extends BlockBase {
       description: string;
       icon: string;
     }>;
+    education: Array<{
+      title: string;
+      subtitle: string;
+      date: string;
+      description: string;
+    }>;
   };
 }
 
 export interface ServicesBlock extends BlockBase {
   type: 'services';
   props: {
+    title?: string;
+    subtitle?: string;
     items: Array<{
       title: string;
       description: string;
@@ -106,6 +130,8 @@ export interface ServicesBlock extends BlockBase {
 export interface PortfolioBlock extends BlockBase {
   type: 'portfolio';
   props: {
+    title?: string;
+    subtitle?: string;
     items: Array<{
       title: string;
       image: string;
@@ -121,6 +147,8 @@ export interface PortfolioBlock extends BlockBase {
 export interface RecommendationsBlock extends BlockBase {
   type: 'recommendations';
   props: {
+    title?: string;
+    subtitle?: string;
     items: Array<{
       name: string;
       role: string;
@@ -150,10 +178,15 @@ export interface ContactBlock extends BlockBase {
 export interface BlogBlock extends BlockBase {
   type: 'blog';
   props: {
+    title?: string;
+    subtitle?: string;
     items: Array<{
+      id?: string;
       title: string;
       image: string;
       description: string;
+      date?: string;
+      category?: string;
     }>;
   };
 }
@@ -161,6 +194,8 @@ export interface BlogBlock extends BlockBase {
 export interface CertificationsBlock extends BlockBase {
   type: 'certifications';
   props: {
+    title?: string;
+    subtitle?: string;
     items: Array<{
       title: string;
       issuer: string;
@@ -243,6 +278,13 @@ export interface CVPage {
     fontFamily: string;
     language: 'es' | 'en';
     aiConfig?: AIConfig;
+    // New: Global configuration
+    navigationLabels?: Record<string, string>; // e.g. { home: 'Inicio', portfolio: 'Trabajos' }
+    headerConfig?: {
+      showNav: boolean;
+      showSocial: boolean;
+      sticky: boolean;
+    };
   };
   version: number;
   publishedAt?: string;

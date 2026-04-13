@@ -4,7 +4,8 @@ import type { CVBlock } from '../types/cv.types';
 import { CMSInput, CMSTextarea, CMSSelect, CMSToggle, CMSSectionHeader, CMSFieldGroup, CMSIconButton, CMSDivider } from './CMSAtoms';
 import { CMSMediaUploader, CMSColorPicker, CMSTextareaWithCount } from './CMSMediaUploader';
 
-export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
+// ── INTERNAL PANEL FOR SINGLE BLOCK ──
+const BlockPropertyPanelInner: React.FC<{ block: CVBlock }> = ({ block }) => {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const p = block.props as any;
 
@@ -13,7 +14,11 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
 
   const updateArrayItem = (arrayKey: string, index: number, field: string, value: any) => {
     const arr = [...(p[arrayKey] || [])];
-    arr[index] = { ...arr[index], [field]: value };
+    if (typeof arr[index] === 'object') {
+      arr[index] = { ...arr[index], [field]: value };
+    } else {
+      arr[index] = value;
+    }
     update(arrayKey, arr);
   };
 
@@ -29,6 +34,50 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
 
   const renderFields = () => {
     switch (block.type) {
+
+      // ── BLOG ──
+      case 'blog': return (
+        <>
+          <CMSSectionHeader title="Artículos / Blog" icon="article" />
+          <CMSFieldGroup title="Contenido General">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <CMSInput label="Título de Sección" value={p.title || ''} onChange={e => update('title', e.target.value)} placeholder="Artículos / Blog" />
+              <CMSTextarea label="Subtítulo (opcional)" value={p.subtitle || ''} onChange={e => update('subtitle', e.target.value)} placeholder="Descripción de la sección..." />
+            </div>
+          </CMSFieldGroup>
+          <CMSFieldGroup title="Gestionar Artículos">
+            {(p.items || []).map((item: any, i: number) => (
+              <div key={i} style={{ padding: 12, background: 'var(--cms-surface-3)', borderRadius: 10, marginBottom: 12, border: '1px solid var(--cms-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cms-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Artículo {i + 1}</span>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <CMSIconButton icon="content_copy" size={14} onClick={() => addArrayItem('items', { ...item, id: `${Date.now()}` })} title="Duplicar" />
+                    <CMSIconButton icon="delete" danger size={14} onClick={() => removeArrayItem('items', i)} title="Eliminar" />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <CMSInput label="Título" value={item.title || ''} placeholder="Título del artículo" onChange={e => updateArrayItem('items', i, 'title', e.target.value)} />
+                  <CMSTextarea label="Descripción Corta" value={item.description || ''} placeholder="Breve resumen..." rows={2} onChange={e => updateArrayItem('items', i, 'description', e.target.value)} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <CMSInput label="Fecha" value={item.date || ''} placeholder="OCT 2024" onChange={e => updateArrayItem('items', i, 'date', e.target.value)} style={{ flex: 1 }} />
+                    <CMSInput label="Categoría" value={item.category || ''} placeholder="UX Design" onChange={e => updateArrayItem('items', i, 'category', e.target.value)} style={{ flex: 1 }} />
+                  </div>
+                  <CMSMediaUploader
+                    label="Imagen de Portada"
+                    value={item.image || ''}
+                    onChange={val => updateArrayItem('items', i, 'image', val)}
+                    accept="image"
+                    compact
+                  />
+                </div>
+              </div>
+            ))}
+            <button className="cms-btn-primary" style={{ width: '100%', padding: '10px' }} onClick={() => addArrayItem('items', { title: 'Nuevo Artículo', description: '', date: '2024', category: 'General', image: 'https://picsum.photos/800/600' })}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span> Agregar Nuevo Artículo
+            </button>
+          </CMSFieldGroup>
+        </>
+      );
 
       // ── HERO ──
       case 'hero': return (
@@ -114,8 +163,11 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
       // ── SKILLS CHART ──
       case 'skills_chart': return (
         <>
-          <CMSSectionHeader title="Spider Chart de Skills" icon="radar" />
-          <CMSFieldGroup title="Habilidades">
+          <CMSSectionHeader title="Benchmarking de Skills" icon="radar" />
+          <CMSFieldGroup title="Contenido de Sección">
+            <CMSInput label="Título de Sección" value={p.title || ''} onChange={e => update('title', e.target.value)} placeholder="Benchmarking de Habilidades" />
+          </CMSFieldGroup>
+          <CMSFieldGroup title="Habilidades (Tus Skills)">
             {(p.skills || []).map((skill: any, i: number) => (
               <div key={i} style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CMSInput value={skill.label} placeholder="Habilidad" onChange={e => updateArrayItem('skills', i, 'label', e.target.value)} style={{ flex: 1 }} />
@@ -127,6 +179,26 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
             <button className="cms-btn-ghost" style={{ width: '100%', fontSize: 12, padding: '8px', marginTop: 4 }} onClick={() => addArrayItem('skills', { label: 'Skill', value: 80 })}>
               <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span> Agregar Habilidad
             </button>
+          </CMSFieldGroup>
+
+          <CMSFieldGroup title="Estándar Senior (Comparativa)">
+            <p style={{ fontSize: 11, color: 'var(--cms-muted)', marginBottom: 12 }}>Define los valores de referencia para el gráfico de araña.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {(p.skills || []).map((skill: any, i: number) => (
+                <div key={i}>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--cms-muted)', display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>{skill.label || `Skill ${i+1}`}</label>
+                  <CMSInput 
+                    type="number" 
+                    value={p.seniorData?.[i] ?? 80} 
+                    onChange={e => {
+                      const data = [...(p.seniorData || Array((p.skills || []).length).fill(80))];
+                      data[i] = parseInt(e.target.value);
+                      update('seniorData', data);
+                    }} 
+                  />
+                </div>
+              ))}
+            </div>
           </CMSFieldGroup>
         </>
       );
@@ -177,7 +249,10 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
       // ── STATS ──
       case 'stats': return (
         <>
-          <CMSSectionHeader title="Datos Relevantes / Métricas" icon="bar_chart" />
+          <CMSSectionHeader title="Métricas de Impacto" icon="bar_chart" />
+          <CMSFieldGroup title="Contenido de Sección">
+            <CMSInput label="Título de Sección" value={p.title || ''} onChange={e => update('title', e.target.value)} placeholder="Datos Relevantes" />
+          </CMSFieldGroup>
           <CMSFieldGroup title="Métricas de Impacto">
             {(p.stats || []).map((stat: any, i: number) => (
               <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-end' }}>
@@ -197,23 +272,61 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
       case 'experience': return (
         <>
           <CMSSectionHeader title="Historial y Educación" icon="work_history" />
+          <CMSFieldGroup title="Títulos de Sección">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <CMSInput label="Título Profesional" value={p.title || ''} onChange={e => update('title', e.target.value)} placeholder="Trayectoria Profesional" />
+              <CMSInput label="Título Educación" value={p.educationTitle || ''} onChange={e => update('educationTitle', e.target.value)} placeholder="Educación" />
+            </div>
+          </CMSFieldGroup>
+          
           <CMSFieldGroup title="Historial Laboral">
             {(p.items || []).map((item: any, i: number) => (
               <div key={i} style={{ padding: 12, background: 'var(--cms-surface-3)', borderRadius: 10, marginBottom: 8, border: '1px solid var(--cms-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cms-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Entrada {i + 1}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cms-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Experiencia {i + 1}</span>
                   <CMSIconButton icon="delete" danger size={14} onClick={() => removeArrayItem('items', i)} title="Eliminar" />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <CMSInput value={item.role || ''} placeholder="Cargo / Rol" onChange={e => updateArrayItem('items', i, 'role', e.target.value)} icon="work" />
-                  <CMSInput value={item.company || ''} placeholder="Empresa / Institución" onChange={e => updateArrayItem('items', i, 'company', e.target.value)} icon="business" />
-                  <CMSInput value={item.period || ''} placeholder="2022 — Actual" onChange={e => updateArrayItem('items', i, 'period', e.target.value)} icon="calendar_month" />
-                  <CMSTextarea value={item.description || ''} placeholder="Logros y responsabilidades" rows={3} onChange={e => updateArrayItem('items', i, 'description', e.target.value)} />
+                  <CMSInput label="Cargo / Rol" value={item.role || item.title || ''} placeholder="Cargo / Rol" onChange={e => {
+                    updateArrayItem('items', i, 'role', e.target.value);
+                    updateArrayItem('items', i, 'title', e.target.value); // Sync for parity
+                  }} icon="work" />
+                  <CMSInput label="Empresa" value={item.company || item.subtitle || ''} placeholder="Empresa" onChange={e => {
+                    updateArrayItem('items', i, 'company', e.target.value);
+                    updateArrayItem('items', i, 'subtitle', e.target.value); // Sync for parity
+                  }} icon="business" />
+                  <CMSInput label="Periodo" value={item.period || item.date || ''} placeholder="2022 — Actual" onChange={e => {
+                    updateArrayItem('items', i, 'period', e.target.value);
+                    updateArrayItem('items', i, 'date', e.target.value); // Sync for parity
+                  }} icon="calendar_month" />
+                  <CMSTextarea value={item.description || ''} placeholder="Logros..." rows={3} onChange={e => updateArrayItem('items', i, 'description', e.target.value)} />
                 </div>
               </div>
             ))}
-            <button className="cms-btn-ghost" style={{ width: '100%', fontSize: 12, padding: '8px' }} onClick={() => addArrayItem('items', { role: 'Nuevo Cargo', company: 'Empresa', period: '2024 — Actual', description: '', icon: 'work' })}>
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span> Agregar Historial
+            <button className="cms-btn-ghost" style={{ width: '100%', fontSize: 12, padding: '8px' }} onClick={() => addArrayItem('items', { role: 'Nuevo Cargo', title: 'Nuevo Cargo', company: 'Empresa', subtitle: 'Empresa', period: '2024 — Actual', date: '2024 — Actual', description: '', icon: 'work' })}>
+              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span> Agregar Experiencia
+            </button>
+          </CMSFieldGroup>
+
+          <CMSDivider label="Educación" />
+
+          <CMSFieldGroup title="Historial Académico">
+            {(p.education || []).map((item: any, i: number) => (
+              <div key={i} style={{ padding: 12, background: 'var(--cms-surface-3)', borderRadius: 10, marginBottom: 8, border: '1px solid var(--cms-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cms-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Estudio {i + 1}</span>
+                  <CMSIconButton icon="delete" danger size={14} onClick={() => removeArrayItem('education', i)} title="Eliminar" />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <CMSInput value={item.title || ''} placeholder="Institución" onChange={e => updateArrayItem('education', i, 'title', e.target.value)} icon="school" />
+                  <CMSInput value={item.subtitle || ''} placeholder="Título / Grado" onChange={e => updateArrayItem('education', i, 'subtitle', e.target.value)} icon="history_edu" />
+                  <CMSInput value={item.date || ''} placeholder="2018 — 2022" onChange={e => updateArrayItem('education', i, 'date', e.target.value)} icon="calendar_today" />
+                  <CMSTextarea value={item.description || ''} placeholder="Descripción..." rows={2} onChange={e => updateArrayItem('education', i, 'description', e.target.value)} />
+                </div>
+              </div>
+            ))}
+            <button className="cms-btn-ghost" style={{ width: '100%', fontSize: 12, padding: '8px' }} onClick={() => addArrayItem('education', { title: 'Nueva Institución', subtitle: 'Título', date: '2024', description: '' })}>
+              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span> Agregar Educación
             </button>
           </CMSFieldGroup>
         </>
@@ -222,7 +335,10 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
       // ── SERVICES ──
       case 'services': return (
         <>
-          <CMSSectionHeader title="Experiencia en:" icon="home_repair_service" />
+          <CMSSectionHeader title="Especialidades / Servicios" icon="home_repair_service" />
+          <CMSFieldGroup title="Contenido de Sección">
+            <CMSInput label="Título de Sección" value={p.title || ''} onChange={e => update('title', e.target.value)} placeholder="Experiencia en:" />
+          </CMSFieldGroup>
           <CMSFieldGroup title="Especialidades Ofrecidas">
             {(p.items || []).map((item: any, i: number) => (
               <div key={i} style={{ padding: 12, background: 'var(--cms-surface-3)', borderRadius: 10, marginBottom: 8, border: '1px solid var(--cms-border)' }}>
@@ -249,6 +365,12 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
       case 'portfolio': return (
         <>
           <CMSSectionHeader title="Trabajos Destacados" icon="photo_library" />
+          <CMSFieldGroup title="Títulos de Sección">
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <CMSInput label="Título (Ej: Portafolio)" value={p.title || ''} onChange={e => update('title', e.target.value)} placeholder="Portafolio" />
+              <CMSInput label="Subtítulo" value={p.subtitle || ''} onChange={e => update('subtitle', e.target.value)} placeholder="Selected Works" />
+            </div>
+          </CMSFieldGroup>
           <CMSFieldGroup title="Listado de Proyectos">
             {(p.items || []).map((item: any, i: number) => (
               <div key={i} style={{ padding: 12, background: 'var(--cms-surface-3)', borderRadius: 10, marginBottom: 8, border: '1px solid var(--cms-border)' }}>
@@ -487,8 +609,128 @@ export const BlockPropertyPanel: React.FC<{ block: CVBlock }> = ({ block }) => {
   };
 
   return (
-    <div style={{ height: '100%' }}>
+    <div style={{ height: '100%', paddingBottom: 40 }}>
       {renderFields()}
     </div>
   );
+};
+
+// ── GLOBAL CONFIG PANEL ──
+const GlobalConfigPanel: React.FC = () => {
+  const { page, updateMeta } = useEditorStore();
+  if (!page) return null;
+  const meta = page.meta;
+
+  const updateNav = (key: string, label: string) => {
+    updateMeta({ navigationLabels: { ...(meta.navigationLabels || {}), [key]: label } });
+  };
+
+  return (
+    <>
+      <CMSSectionHeader title="Configuración Global" icon="settings" />
+      <CMSFieldGroup title="Nombres de Navegación">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {Object.entries(meta.navigationLabels || {}).map(([key, label]) => (
+            <CMSInput 
+              key={key} 
+              label={`Sección: ${key.charAt(0).toUpperCase() + key.slice(1)}`} 
+              value={label} 
+              onChange={e => updateNav(key, e.target.value)} 
+              placeholder={`Nombre para ${key}`}
+            />
+          ))}
+        </div>
+      </CMSFieldGroup>
+
+      <CMSFieldGroup title="Ajustes de Cabecera">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <CMSToggle 
+            label="Cabecera Sticky (Fija)" 
+            checked={!!meta.headerConfig?.sticky} 
+            onChange={val => updateMeta({ headerConfig: { ...(meta.headerConfig || {}), sticky: val } as any })} 
+          />
+          <CMSToggle 
+            label="Mostrar Navegación" 
+            checked={!!meta.headerConfig?.showNav} 
+            onChange={val => updateMeta({ headerConfig: { ...(meta.headerConfig || {}), showNav: val } as any })} 
+          />
+          <CMSToggle 
+            label="Mostrar Redes Sociales" 
+            checked={!!meta.headerConfig?.showSocial} 
+            onChange={val => updateMeta({ headerConfig: { ...(meta.headerConfig || {}), showSocial: val } as any })} 
+          />
+        </div>
+      </CMSFieldGroup>
+
+      <CMSFieldGroup title="Diseño & Colores">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <CMSColorPicker 
+            label="Color Primario" 
+            value={meta.primaryColor} 
+            onChange={val => updateMeta({ primaryColor: val })} 
+          />
+          <CMSSelect 
+            label="Tipografía Principal"
+            value={meta.fontFamily}
+            onChange={e => updateMeta({ fontFamily: e.target.value })}
+            options={[
+              { value: "'Inter', sans-serif", label: 'Inter' },
+              { value: "'Outfit', sans-serif", label: 'Outfit' },
+              { value: "'Roboto', sans-serif", label: 'Roboto' },
+              { value: "'Space Grotesk', sans-serif", label: 'Space Grotesk' },
+            ]}
+          />
+        </div>
+      </CMSFieldGroup>
+    </>
+  );
+};
+
+// ── EXPORTED PROPERTY PANEL (Router) ──
+export const BlockPropertyPanel: React.FC<{ selectedId: string | null }> = ({ selectedId }) => {
+  const { page } = useEditorStore();
+  
+  if (!page || !selectedId) return (
+    <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--cms-muted)' }}>
+      <span className="material-symbols-outlined" style={{ fontSize: 48, display: 'block', marginBottom: 16, opacity: 0.2 }}>select_window_2</span>
+      <p style={{ fontSize: 13, fontWeight: 500 }}>Selecciona un grupo o bloque en la barra lateral para editar sus propiedades.</p>
+    </div>
+  );
+
+  // 1. Caso: Configuración Global
+  if (selectedId === 'global-config') {
+    return <GlobalConfigPanel />;
+  }
+
+  // 2. Caso: Grupo de bloques
+  if (selectedId.startsWith('group:')) {
+    const groupId = selectedId.replace('group:', '');
+    const groupTypes = {
+      identity: ['hero', 'info_card', 'languages', 'skills_chart', 'aptitudes'],
+      experience: ['experience', 'certifications'],
+      portfolio: ['services', 'portfolio', 'stats', 'uxui_showcase', 'frontend_showcase', 'backend_showcase'],
+      social: ['recommendations', 'blog', 'contact', 'footer'],
+    }[groupId] || [];
+
+    const groupBlocks = page.blocks.filter(b => groupTypes.includes(b.type));
+
+    return (
+      <div style={{ height: '100%', overflowY: 'auto' }}>
+        <CMSSectionHeader title={`Editando Grupo: ${groupId.toUpperCase()}`} icon="category" />
+        <div style={{ padding: '0 0 100px' }}>
+          {groupBlocks.map(block => (
+            <div key={block.id} style={{ borderBottom: '8px solid var(--cms-bg)', background: 'var(--cms-surface)' }}>
+              <BlockPropertyPanelInner block={block} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Caso: Bloque individual
+  const block = page.blocks.find(b => b.id === selectedId);
+  if (!block) return null;
+
+  return <BlockPropertyPanelInner block={block} />;
 };

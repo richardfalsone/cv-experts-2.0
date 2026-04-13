@@ -138,16 +138,20 @@ export const PublicLanguages: React.FC<{ props: any }> = ({ props }) => (
 export const PublicSkillChart: React.FC<{ props: any }> = ({ props }) => {
   const labels = props.skills?.map((s: any) => s.label) || ['UX', 'UI', 'Research', 'Strategy', 'Systems', 'Agile'];
   const data = props.skills?.map((s: any) => s.value) || [95, 90, 85, 92, 88, 80];
+  const seniorData = props.seniorData || [80, 80, 75, 85, 80, 75];
+  
   return (
     <div className="arter-card p-10 h-full flex flex-col justify-between space-y-10 group">
       <div className="space-y-1">
-        <h4 className="text-[10px] font-bold text-[#00a4ff] uppercase tracking-[3px]">Benchmarking de Habilidades</h4>
+        <h4 className="text-[10px] font-bold text-[#00a4ff] uppercase tracking-[3px]">
+          {props.title || "Benchmarking de Habilidades"}
+        </h4>
       </div>
       <div className="flex justify-center items-center flex-1 -mt-4">
         <SpiderChart 
           labels={labels}
           data={data}
-          seniorData={[80, 80, 75, 85, 80, 75]}
+          seniorData={seniorData}
           size={240}
         />
       </div>
@@ -157,9 +161,11 @@ export const PublicSkillChart: React.FC<{ props: any }> = ({ props }) => {
 
 export const PublicAptitudes: React.FC<{ props: any }> = ({ props }) => (
   <div className="arter-card p-12 mb-12 space-y-12">
-    <h4 className="text-[10px] font-bold text-[#00a4ff] uppercase tracking-[3px]">Aptitudes Principales</h4>
+    <h4 className="text-[10px] font-bold text-[#00a4ff] uppercase tracking-[3px]">
+      {props.title || "Aptitudes Principales"}
+    </h4>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-12">
-      {props.items.map((item: string, i: number) => (
+      {(props.items || []).map((item: string, i: number) => (
         <div key={i} className="flex items-center gap-6 group">
            <div className="w-5 h-5 rounded-full bg-[#00a4ff]/10 flex items-center justify-center group-hover:bg-[#00a4ff]/20 transition-colors border border-[#00a4ff]/20">
               <Icon name="check" className="text-[#00a4ff] !text-[10px] font-bold" />
@@ -174,8 +180,12 @@ export const PublicAptitudes: React.FC<{ props: any }> = ({ props }) => (
 export const PublicCertifications: React.FC<{ props: any }> = ({ props }) => (
   <div className="arter-card p-12 mb-12 space-y-12 relative overflow-hidden">
     <div className="flex items-center justify-between">
-      <h4 className="text-[10px] font-bold text-[#00a4ff] uppercase tracking-[3px]">Certificaciones</h4>
-      <div className="bg-[#0d1b35] px-3 py-1 rounded-full border border-[var(--border)] text-[9px] font-bold text-[var(--on-surface-muted)]">15</div>
+      <h4 className="text-[10px] font-bold text-[#00a4ff] uppercase tracking-[3px]">
+        {props.title || "Certificaciones"}
+      </h4>
+      <div className="bg-[#0d1b35] px-3 py-1 rounded-full border border-[var(--border)] text-[9px] font-bold text-[var(--on-surface-muted)]">
+        {(props.items || []).length}
+      </div>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-12">
       {props.items?.map((cert: any, i: number) => (
@@ -200,7 +210,9 @@ export const PublicCertifications: React.FC<{ props: any }> = ({ props }) => (
 export const PublicStats: React.FC<{ props: any }> = ({ props }) => (
   <section className="py-24 border-b border-[var(--border)] space-y-16">
     <div className="space-y-4">
-      <h3 className="text-4xl font-bold tracking-tight text-[#00a4ff] uppercase">Datos Relevantes</h3>
+      <h3 className="text-4xl font-bold tracking-tight text-[#00a4ff] uppercase">
+        {props.title || "Datos Relevantes"}
+      </h3>
       <div className="h-2 w-16 bg-[#00a4ff] rounded-full" />
     </div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
@@ -220,7 +232,7 @@ export const PublicStats: React.FC<{ props: any }> = ({ props }) => (
 
 export const PublicServices: React.FC<{ props: any }> = ({ props }) => (
   <section className="section-spacing !my-24">
-    <SectionHeader title="Experiencia en:" />
+    <SectionHeader title={props.title || "Experiencia en:"} />
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
       {props.items.map((item: any, i: number) => (
         <ServiceFlipCard key={i} item={item} />
@@ -271,34 +283,53 @@ const ServiceFlipCard = ({ item }: { item: any }) => {
 
 export const PublicExperience: React.FC<{ props: any }> = ({ props }) => (
   <section id="history" className="section-spacing !my-24">
-    <SectionHeader title="Trayectoria Profesional" />
-    <div className="space-y-0">
-      {props.items.map((item: any, i: number) => (
-        <div key={i} className="relative pb-16 pl-12">
-          {i !== props.items.length - 1 && <div className="absolute left-[9px] top-4 bottom-0 w-[2px] bg-[var(--border)]" />}
-          <div className="absolute left-0 top-3 w-[20px] h-[20px] rounded-full bg-[#010610] border-4 border-[#00a4ff] shadow-md z-10" />
-          <div className="arter-card py-10 px-10 space-y-10 hover:border-primary/30 transition-all duration-500 group relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 relative z-10">
-                <div className="space-y-3">
-                   <h5 className="font-bold tracking-tight group-hover:text-primary transition-colors text-2xl">{item.role}</h5>
-                   <p className="text-[11px] font-bold text-primary/80 uppercase tracking-[3px]">{item.company}</p>
-                </div>
-                <span className="text-[11px] bg-[#0d1b35] px-7 py-3.5 rounded-full text-white h-fit font-bold border border-[var(--border)] shadow-inner uppercase tracking-[3px] whitespace-nowrap">
-                  {item.period}
-                </span>
-             </div>
-             <p className="text-base leading-relaxed text-[var(--on-surface-muted)] relative z-10 font-medium">{item.description}</p>
-          </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+      <div className="space-y-12">
+        <SectionHeader title={props.educationTitle || "Educación"} />
+        <div className="space-y-0">
+          {(props.education || []).map((item: any, i: number) => (
+            <div key={i} className="relative pb-10 pl-10">
+              {i !== props.education.length - 1 && <div className="absolute left-[7px] top-4 bottom-0 w-[2px] bg-[var(--border)]" />}
+              <div className="absolute left-0 top-3 w-[16px] h-[16px] rounded-full bg-[#010610] border-4 border-[#00a4ff] shadow-md z-10" />
+              <div className="arter-card !py-6 !px-8 hover:border-primary/30 transition-all duration-500">
+                <h5 className="font-bold tracking-tight text-xl mb-1">{item.title}</h5>
+                <p className="text-[10px] font-bold text-primary/80 uppercase tracking-[2px] mb-4">{item.subtitle} | {item.date}</p>
+                <p className="text-sm leading-relaxed text-[var(--on-surface-muted)] font-medium">{item.description}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
+      <div className="space-y-12">
+        <SectionHeader title={props.title || "Trayectoria Profesional"} />
+        <div className="space-y-0">
+          {(props.items || []).map((item: any, i: number) => (
+            <div key={i} className="relative pb-12 pl-10">
+              {i !== props.items.length - 1 && <div className="absolute left-[7px] top-4 bottom-0 w-[2px] bg-[var(--border)]" />}
+              <div className="absolute left-0 top-3 w-[16px] h-[16px] rounded-full bg-[#010610] border-4 border-[#00a4ff] shadow-md z-10" />
+              <div className="arter-card !py-8 !px-10 hover:border-primary/30 transition-all duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
+                  <div className="space-y-1">
+                    <h5 className="font-bold tracking-tight text-xl">{item.role}</h5>
+                    <p className="text-[10px] font-bold text-primary/80 uppercase tracking-[2px]">{item.company}</p>
+                  </div>
+                  <span className="text-[10px] bg-[#0d1b35] px-4 py-2 rounded-full text-white h-fit font-bold border border-[var(--border)] uppercase tracking-[2px]">
+                    {item.period}
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed text-[var(--on-surface-muted)] font-medium">{item.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   </section>
 );
 
 export const PublicPortfolio: React.FC<{ props: any }> = ({ props }) => (
   <section id="portfolio" className="section-spacing !my-24">
-    <SectionHeader title="Portafolio" subtitle="Selected Works" />
+    <SectionHeader title={props.title || "Portafolio"} subtitle={props.subtitle || "Selected Works"} />
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
       {props.items.map((item: any, i: number) => (
         <div key={i} className="group relative overflow-hidden arter-card p-2 cursor-pointer rounded-[44px] border-[var(--border)]">
@@ -322,7 +353,7 @@ export const PublicPortfolio: React.FC<{ props: any }> = ({ props }) => (
 
 export const PublicRecommendations: React.FC<{ props: any }> = ({ props }) => (
   <section className="section-spacing !my-24">
-    <SectionHeader title="Recomendaciones" />
+    <SectionHeader title={props.title || "Recomendaciones"} />
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
       {props.items.map((r: any, i: number) => (
         <div key={i} className="arter-card p-12 flex flex-col h-full group relative overflow-hidden">
@@ -352,17 +383,23 @@ export const PublicRecommendations: React.FC<{ props: any }> = ({ props }) => (
 
 export const PublicBlog: React.FC<{ props: any }> = ({ props }) => (
   <section id="blog" className="section-spacing !my-24">
-    <SectionHeader title="Blog" subtitle="Pensamientos y Reflexiones" />
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-      {props.items.map((item: any, i: number) => (
-        <div key={i} className="arter-card !p-3 group overflow-hidden flex flex-col h-full rounded-[44px]">
-          <div className="aspect-[16/10] overflow-hidden shrink-0 relative rounded-[32px]">
-            <img src={item.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+    <SectionHeader title={props.title || "Artículos / Blog"} />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
+      {(props.items || []).map((item: any, i: number) => (
+        <div key={i} className="arter-card !p-0 group overflow-hidden flex flex-col h-full border border-[var(--border)] cursor-pointer">
+          <div className="h-48 overflow-hidden relative">
+             <img src={item.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
           </div>
-          <div className="p-10 space-y-6 flex-1 flex flex-col">
-            <h4 className="font-bold text-2xl group-hover:text-[#00a4ff] transition-colors leading-tight line-clamp-2">{item.title}</h4>
-            <p className="text-base text-[var(--on-surface-muted)] line-clamp-3 font-medium flex-1">{item.description}</p>
-            <Button variant="secondary" size="md" className="w-full mt-8">LEER MÁS</Button>
+          <div className="p-8 space-y-4 flex-1 flex flex-col bg-[var(--surface)]">
+             <div className="flex items-center justify-between text-[9px] font-bold text-primary uppercase tracking-[2px]">
+               <span>{item.category || 'General'}</span>
+               <span>{item.date}</span>
+             </div>
+             <h4 className="font-bold text-xl group-hover:text-primary transition-colors">{item.title}</h4>
+             <p className="text-sm text-[var(--on-surface-muted)] line-clamp-2 leading-relaxed">{item.description}</p>
+             <Button variant="secondary" size="sm" className="mt-auto self-start text-primary group-hover:gap-3 transition-all !px-0">
+               LEER MÁS
+             </Button>
           </div>
         </div>
       ))}
@@ -372,7 +409,7 @@ export const PublicBlog: React.FC<{ props: any }> = ({ props }) => (
 
 export const PublicContact: React.FC<{ props: any }> = ({ props }) => (
   <section id="contact" className="section-spacing !my-24 text-center flex flex-col items-center">
-    <SectionHeader title="¿Hablamos?" />
+    <SectionHeader title={props.title || "¿Hablamos?"} />
     <div className="arter-card !p-16 md:!p-24 !rounded-[60px] w-full max-w-5xl space-y-16">
         <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-white">{props.headline}</h2>
         <p className="text-xl md:text-2xl text-[var(--on-surface-muted)] max-w-3xl mx-auto font-medium leading-relaxed">{props.subtext}</p>
@@ -399,23 +436,32 @@ export const PublicFooter: React.FC<{ props: any }> = ({ props }) => (
   </footer>
 );
 
-export const PublicFloatingNav: React.FC = () => {
+export const PublicFloatingNav: React.FC<{ labels?: Record<string, string>; config?: any }> = ({ labels, config }) => {
   const [active, setActive] = useState('home');
+  
+  if (config?.showNav === false) return null;
+
+  const navItems = [
+    { icon: 'home', label: labels?.home || 'Inicio', id: 'home' },
+    { icon: 'work', label: labels?.portfolio || 'Trabajos', id: 'portfolio' },
+    { icon: 'history_edu', label: labels?.history || 'Historia', id: 'history' },
+    { icon: 'mail', label: labels?.contact || 'Contacto', id: 'contact' },
+    { icon: 'article', label: labels?.blog || 'Blog', id: 'blog' }
+  ];
+
   return (
-    <nav className="fixed top-8 left-1/2 -translate-x-1/2 h-20 bg-[#0d1b35]/80 backdrop-blur-xl shadow-2xl z-[110] rounded-full px-6 flex items-center gap-4 border border-white/5 transition-all duration-500">
+    <nav className={cn(
+      "fixed left-1/2 -translate-x-1/2 h-20 bg-[#0d1b35]/80 backdrop-blur-xl shadow-2xl z-[110] rounded-full px-6 flex items-center gap-4 border border-white/5 transition-all duration-500",
+      config?.sticky === false ? "absolute top-8" : "fixed top-8"
+    )}>
       <div className="flex items-center gap-2">
-        {[
-          { icon: 'home', label: 'Inicio', id: 'home' },
-          { icon: 'work', label: 'Trabajos', id: 'portfolio' },
-          { icon: 'history_edu', label: 'Historia', id: 'history' },
-          { icon: 'mail', label: 'Contacto', id: 'contact' },
-          { icon: 'article', label: 'Blog', id: 'blog' }
-        ].map((item) => (
+        {navItems.map((item) => (
           <button 
             key={item.id}
             onClick={() => {
               setActive(item.id);
-              document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+              const el = document.getElementById(item.id);
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
             className={cn(
               "flex items-center gap-4 px-6 py-3 transition-apple group relative rounded-full",
@@ -432,18 +478,22 @@ export const PublicFloatingNav: React.FC = () => {
           </button>
         ))}
       </div>
-      <div className="h-10 w-px bg-white/10 mx-2 shrink-0" />
-      <div className="flex items-center gap-6 px-4">
-         <div className="flex items-center gap-4">
-            <span className="text-xs font-bold text-[var(--on-surface-muted)]">EN</span>
-            <div className="w-10 h-5 bg-[#00a4ff] rounded-full relative cursor-pointer">
-              <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full shadow-sm" />
-            </div>
-            <span className="text-xs font-bold text-[#00a4ff]">ES</span>
-         </div>
-         <Icon name="download" className="!text-2xl text-[var(--on-surface-muted)] hover:text-[#00a4ff] cursor-pointer transition-colors" />
-         <Icon name="light_mode" className="!text-2xl text-[var(--on-surface-muted)] hover:text-[#00a4ff] cursor-pointer transition-colors" />
-      </div>
+      {(config?.showSocial !== false) && (
+        <>
+          <div className="h-10 w-px bg-white/10 mx-2 shrink-0" />
+          <div className="flex items-center gap-6 px-4">
+             <div className="flex items-center gap-4">
+                <span className="text-xs font-bold text-[var(--on-surface-muted)]">EN</span>
+                <div className="w-10 h-5 bg-[#00a4ff] rounded-full relative cursor-pointer">
+                  <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full shadow-sm" />
+                </div>
+                <span className="text-xs font-bold text-[#00a4ff]">ES</span>
+             </div>
+             <Icon name="download" className="!text-2xl text-[var(--on-surface-muted)] hover:text-[#00a4ff] cursor-pointer transition-colors" />
+             <Icon name="light_mode" className="!text-2xl text-[var(--on-surface-muted)] hover:text-[#00a4ff] cursor-pointer transition-colors" />
+          </div>
+        </>
+      )}
     </nav>
   );
 };
@@ -452,7 +502,7 @@ export const PublicFloatingNav: React.FC = () => {
 
 export const PublicUXUIShowcase: React.FC<{ props: any }> = ({ props }) => (
   <section className="section-spacing !my-24">
-    <SectionHeader title="UX/UI Case Study" subtitle={props.figmaTitle || "Design Process & Interactive Prototypes"} />
+    <SectionHeader title={props.title || "UX/UI Case Study"} subtitle={props.figmaTitle || "Design Process & Interactive Prototypes"} />
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
        <div className="space-y-12">
           {props.sliderItems?.map((item: any, i: number) => (
@@ -543,3 +593,4 @@ export const PublicBackendShowcase: React.FC<{ props: any }> = ({ props }) => (
     </div>
   </section>
 );
+

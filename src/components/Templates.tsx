@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { Icon, Button, CircularProgress, SpiderChart, ScrollReveal } from './Atoms';
 import { ProfileCard, NavButton, ServiceCard, RecommendationCard, ThemeToggle, LanguageSwitch, DownloadPDFButton, MobileCarousel, InfoList, ImageModal, AIAssistant } from './Molecules';
 import { PrintableCV } from './PrintableCV';
-import { StatsGrid, PortfolioGrid, HistorySection, ContactForm, ClientsSection } from './Organisms';
+import { StatsGrid, PortfolioGrid, HistorySection, CertificationsSection, ContactForm, ClientsSection } from './Organisms';
 import { useLanguage } from '../lib/LanguageContext';
 
 export const BlogPostPage: React.FC<{ postId: string, onBack: () => void }> = ({ postId, onBack }) => {
@@ -232,6 +232,26 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
   }, [activeBlogView]);
 
   useEffect(() => {
+    const handleCMSMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'CMS_SELECT_BLOCK') {
+        const blockId = event.data.blockId;
+        const element = document.getElementById(blockId);
+        if (element) {
+          // Tell CMS where this block is located
+          window.parent.postMessage({
+            type: 'BLOCK_POSITION',
+            blockId,
+            offsetTop: element.offsetTop
+          }, '*');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleCMSMessage);
+    return () => window.removeEventListener('message', handleCMSMessage);
+  }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
       const sections = ['home', 'portfolio', 'history', 'contact', 'blog'];
       const current = sections.find(section => {
@@ -286,7 +306,10 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
   return (
     <div className="h-screen w-full bg-[var(--bg)] text-[var(--on-surface)] font-sans overflow-hidden relative selection:bg-primary/30 selection:text-primary print:h-auto print:overflow-visible print:bg-white print:text-black">
       <div className="h-full w-full flex flex-col relative print:hidden">
-        <nav className="flex lg:hidden fixed top-6 left-6 right-6 md:left-10 md:right-10 max-w-[1352px] mx-auto h-16 bg-[var(--surface)]/90 backdrop-blur-md shadow-arter z-[100] rounded-full px-2 items-center justify-between border border-[var(--border)] transition-all duration-500 print:hidden">
+        <nav className={cn(
+          "flex lg:hidden fixed top-6 left-6 right-6 md:left-10 md:right-10 max-w-[1352px] mx-auto h-16 bg-[var(--surface)]/90 backdrop-blur-md shadow-arter z-[100] rounded-full px-2 items-center justify-between border border-[var(--border)] transition-all duration-500 print:hidden",
+          cmsData?.meta?.headerConfig?.showNav === false && "hidden"
+        )}>
           <div className="flex items-center">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={cn("flex items-center gap-3 px-5 py-2.5 transition-apple group relative rounded-full border border-transparent", isSidebarOpen ? "text-[var(--on-surface)] glass shadow-sm !border-primary" : "text-[var(--on-surface)] hover:bg-[var(--surface-variant)]/50")}>
               <Icon name={isSidebarOpen ? "close" : "menu"} className="!text-xl" />
@@ -306,9 +329,15 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/60 z-[90] lg:hidden backdrop-blur-sm" />
               <motion.div initial={{ opacity: 0, y: -20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.95 }} className="fixed top-[100px] left-6 right-6 md:left-10 md:right-10 max-w-[1352px] mx-auto bg-[var(--surface)]/95 backdrop-blur-xl shadow-arter-lg z-[100] rounded-[32px] border border-[var(--border)] flex flex-col p-6 print:hidden overflow-hidden">
                 <nav className="flex flex-col space-y-2">
-                  <h4 className="text-[var(--on-surface-muted)] font-bold uppercase tracking-[4px] text-[10px] mb-4 pl-4">{t('home')}</h4>
+                  <h4 className="text-[var(--on-surface-muted)] font-bold uppercase tracking-[4px] text-[10px] mb-4 pl-4">{cmsData?.meta?.navigationLabels?.home || t('home')}</h4>
                   <ul className="space-y-1">
-                    {[{ id: 'home', label: t('home'), icon: 'home' }, { id: 'portfolio', label: t('portfolio'), icon: 'work' }, { id: 'history', label: t('history'), icon: 'history_edu' }, { id: 'contact', label: t('contact'), icon: 'mail' }, { id: 'blog', label: t('blog'), icon: 'article' }].map((item) => (
+                    {[
+                      { id: 'home', label: cmsData?.meta?.navigationLabels?.home || t('home'), icon: 'home' }, 
+                      { id: 'portfolio', label: cmsData?.meta?.navigationLabels?.portfolio || t('portfolio'), icon: 'work' }, 
+                      { id: 'history', label: cmsData?.meta?.navigationLabels?.history || t('history'), icon: 'history_edu' }, 
+                      { id: 'contact', label: cmsData?.meta?.navigationLabels?.contact || t('contact'), icon: 'mail' }, 
+                      { id: 'blog', label: cmsData?.meta?.navigationLabels?.blog || t('blog'), icon: 'article' }
+                    ].map((item) => (
                       <li key={item.id}>
                         <button onClick={() => scrollTo(item.id)} className={cn("flex items-center gap-4 w-full text-left px-4 py-3.5 rounded-2xl text-[12px] font-bold uppercase tracking-[2px] transition-all", activeSection === item.id ? "bg-primary/10 text-primary" : "text-[var(--on-surface-muted)] hover:bg-[var(--surface-variant)] hover:text-[var(--on-surface)]")}>
                           <Icon name={item.icon} className="!text-xl" />
@@ -323,13 +352,17 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
           )}
         </AnimatePresence>
 
-        <nav className="hidden lg:flex fixed top-10 left-1/2 -translate-x-1/2 h-16 bg-[var(--surface)]/90 backdrop-blur-md shadow-arter z-[100] rounded-full px-4 items-center gap-2 border border-[var(--border)] transition-all duration-500 print:hidden">
+        <nav className={cn(
+          "hidden lg:flex fixed left-1/2 -translate-x-1/2 h-16 bg-[var(--surface)]/90 backdrop-blur-md shadow-arter z-[100] rounded-full px-4 items-center gap-2 border border-[var(--border)] transition-all duration-500 print:hidden",
+          cmsData?.meta?.headerConfig?.sticky === false ? "absolute top-10" : "fixed top-10",
+          cmsData?.meta?.headerConfig?.showNav === false && "hidden"
+        )}>
           <div className="flex items-center gap-1 shrink-0">
-            <NavButton icon="home" label={t('home')} active={activeSection === 'home'} onClick={() => scrollTo('home')} />
-            <NavButton icon="work" label={t('portfolio')} active={activeSection === 'portfolio'} onClick={() => scrollTo('portfolio')} />
-            <NavButton icon="history_edu" label={t('history')} active={activeSection === 'history'} onClick={() => scrollTo('history')} />
-            <NavButton icon="mail" label={t('contact')} active={activeSection === 'contact'} onClick={() => scrollTo('contact')} />
-            <NavButton icon="article" label={t('blog')} active={activeSection === 'blog'} onClick={() => scrollTo('blog')} />
+            <NavButton icon="home" label={cmsData?.meta?.navigationLabels?.home || t('home')} active={activeSection === 'home'} onClick={() => scrollTo('home')} />
+            <NavButton icon="work" label={cmsData?.meta?.navigationLabels?.portfolio || t('portfolio')} active={activeSection === 'portfolio'} onClick={() => scrollTo('portfolio')} />
+            <NavButton icon="history_edu" label={cmsData?.meta?.navigationLabels?.history || t('history')} active={activeSection === 'history'} onClick={() => scrollTo('history')} />
+            <NavButton icon="article" label={cmsData?.meta?.navigationLabels?.blog || t('blog')} active={activeSection === 'blog'} onClick={() => scrollTo('blog')} />
+            <NavButton icon="mail" label={cmsData?.meta?.navigationLabels?.contact || t('contact')} active={activeSection === 'contact'} onClick={() => scrollTo('contact')} />
           </div>
           <div className="h-8 w-px bg-[var(--border)] mx-2 shrink-0" />
           <div className="flex items-center gap-1 shrink-0 pr-1">
@@ -347,7 +380,7 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
             </AnimatePresence>
 
             <div className={cn("space-y-20 md:space-y-28 lg:space-y-36 transition-all duration-700", activeBlogView ? "hidden opacity-0 h-0 overflow-hidden" : "opacity-100 block")}>
-              <section id="home" className="relative w-full min-h-[700px] bg-[var(--surface)] overflow-hidden rounded-[40px] shadow-arter-lg border border-[var(--border)] group">
+              <section id={cmsData?.blocks?.find((b: any) => b.type === 'hero')?.id || 'home'} className="relative w-full min-h-[700px] bg-[var(--surface)] overflow-hidden rounded-[40px] shadow-arter-lg border border-[var(--border)] group">
                 <div className="absolute inset-0 z-0">
                   <img src={heroProps.bgImage || "https://ais-dev-2gvmeatgq3wpakpdr2qcel-518479397297.us-east1.run.app/image_1.png"} alt="" className="w-full h-full object-cover opacity-10 group-hover:scale-105 transition-apple duration-[3000ms]" referrerPolicy="no-referrer" aria-hidden="true" />
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--surface)]/80 to-[var(--surface)]" />
@@ -364,8 +397,8 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl mx-auto">
-                    <div className="glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter space-y-8 text-left">
-                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{t('personalInfoTitle')}</h4>
+                    <div id={cmsData?.blocks?.find((b: any) => b.type === 'info_card')?.id} className="glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter space-y-8 text-left">
+                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{infoProps.title || t('personalInfoTitle')}</h4>
                       <InfoList items={[
                         { label: t('personalEmail'), value: infoProps.email || heroProps.email || '', icon: 'mail' },
                         { label: t('personalPhone'), value: infoProps.phone || heroProps.phone || '', icon: 'phone' },
@@ -373,8 +406,8 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
                       ]} />
                     </div>
 
-                    <div className="glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter flex flex-col items-center justify-center gap-12">
-                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{lang === 'en' ? 'Languages' : 'Idiomas'}</h4>
+                    <div id={cmsData?.blocks?.find((b: any) => b.type === 'languages')?.id} className="glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter flex flex-col items-center justify-center gap-12">
+                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{langProps.title || (lang === 'en' ? 'Languages' : 'Idiomas')}</h4>
                       <div className="flex gap-12">
                         {((langProps.languages || heroProps.languages) || [
                           { name: 'Spanish', level: 100 },
@@ -385,18 +418,18 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
                       </div>
                     </div>
 
-                    <div className="glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter flex flex-col items-center justify-center gap-8">
-                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{t('benchmarking')}</h4>
+                    <div id={cmsData?.blocks?.find((b: any) => b.type === 'skills_chart')?.id} className="glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter flex flex-col items-center justify-center gap-8">
+                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{skillsProps.title || t('benchmarking')}</h4>
                       <SpiderChart 
-                        labels={(skillsProps.labels || heroProps.skillsLabels) || ['UX', 'UI', 'RES', 'STR', 'SYS', 'AGI']} 
-                        data={(skillsProps.data || heroProps.skillsData) || [95, 90, 85, 92, 88, 80]} 
+                        labels={(skillsProps.skills?.map((s: any) => s.label) || heroProps.skillsLabels) || ['UX', 'UI', 'RES', 'STR', 'SYS', 'AGI']} 
+                        data={(skillsProps.skills?.map((s: any) => s.value) || heroProps.skillsData) || [95, 90, 85, 92, 88, 80]} 
                         seniorData={(skillsProps.seniorData || heroProps.seniorSkillsData) || [80, 80, 75, 85, 80, 75]} 
                         size={160} 
                       />
                     </div>
 
-                    <div className="md:col-span-2 lg:col-span-3 glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter space-y-8">
-                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{t('mainAptitudes')}</h4>
+                    <div id={cmsData?.blocks?.find((b: any) => b.type === 'aptitudes')?.id} className="md:col-span-2 lg:col-span-3 glass p-10 rounded-[40px] border border-[var(--border)] shadow-arter space-y-8">
+                      <h4 className="w-full text-left text-[11px] font-extrabold uppercase tracking-[4px] text-primary">{aptitudesProps.title || t('mainAptitudes')}</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
                         {((aptitudesProps.items || heroProps.aptitudes) || ['Atomic Design', 'Design Systems', 'User Research', 'Prototyping']).map((skill: string, i: number) => (
                           <div key={i} className="flex items-center gap-3 text-[14px] text-[var(--on-surface)] font-medium text-left">
@@ -411,13 +444,15 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
               </section>
 
               <ScrollReveal>
-                <StatsGrid data={statsProps.stats || statsProps.items} />
+                <div id={cmsData?.blocks?.find((b: any) => b.type === 'stats')?.id || 'stats'}>
+                  <StatsGrid data={statsProps.stats || statsProps.items} title={statsProps.title} />
+                </div>
               </ScrollReveal>
 
               <ScrollReveal delay={0.05}>
-                <section id="services" className="space-y-12 md:space-y-16 section-spacing">
+                <section id={cmsData?.blocks?.find((b: any) => b.type === 'services')?.id || 'services'} className="space-y-12 md:space-y-16 section-spacing">
                   <div className="space-y-4">
-                    <h3 className="font-bold uppercase tracking-[3px] text-primary">{t('experienceIn')}</h3>
+                    <h3 className="font-bold uppercase tracking-[3px] text-primary">{servicesProps.title || t('experienceIn')}</h3>
                     <div className="h-1.5 w-12 bg-primary rounded-full" />
                   </div>
                   <MobileCarousel className="md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
@@ -429,18 +464,39 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
               </ScrollReveal>
 
               <ScrollReveal delay={0.05}>
-                <PortfolioGrid projects={portfolioProps.items || portfolioProps.projects} />
+                <div id={cmsData?.blocks?.find((b: any) => b.type === 'portfolio')?.id || 'portfolio'}>
+                  <PortfolioGrid 
+                    projects={portfolioProps.items || portfolioProps.projects} 
+                    title={portfolioProps.title}
+                    subtitle={portfolioProps.subtitle}
+                  />
+                </div>
               </ScrollReveal>
 
               <ScrollReveal delay={0.05}>
-                {/* historyProps comes from 'experience' block */}
-                <HistorySection work={historyProps.items} />
+                <div id={cmsData?.blocks?.find((b: any) => b.type === 'experience')?.id || 'experience'}>
+                  <HistorySection 
+                    work={historyProps.items} 
+                    education={historyProps.education} 
+                    title={historyProps.title}
+                    educationTitle={historyProps.educationTitle}
+                  />
+                </div>
               </ScrollReveal>
 
               <ScrollReveal delay={0.05}>
-                <section id="recommendations" className="space-y-12 md:space-y-16 section-spacing">
+                <div id={cmsData?.blocks?.find((b: any) => b.type === 'certifications')?.id || 'certifications'}>
+                  <CertificationsSection 
+                    title={getBlockProps('certifications').title} 
+                    items={getBlockProps('certifications').items} 
+                  />
+                </div>
+              </ScrollReveal>
+
+              <ScrollReveal delay={0.05}>
+                <section id={cmsData?.blocks?.find((b: any) => b.type === 'recommendations')?.id || 'recommendations'} className="space-y-12 md:space-y-16 section-spacing">
                   <div className="space-y-4">
-                    <h3 className="font-bold uppercase tracking-[3px] text-primary">{t('recommendations')}</h3>
+                    <h3 className="font-bold uppercase tracking-[3px] text-primary">{recommendationsProps.title || t('recommendations')}</h3>
                     <div className="h-1.5 w-12 bg-primary rounded-full" />
                   </div>
                   <MobileCarousel className="md:grid-cols-2 xl:grid-cols-3 gap-10 md:gap-12">
@@ -460,7 +516,32 @@ export const ExecutiveLayout = ({ children, cmsData }: { children?: React.ReactN
               </ScrollReveal>
               
               <ScrollReveal delay={0.05}>
-                <ContactForm />
+                <section id={cmsData?.blocks?.find((b: any) => b.type === 'blog')?.id || 'blog'} className="space-y-12 md:space-y-16 section-spacing">
+                  <div className="space-y-4">
+                    <h3 className="font-bold uppercase tracking-[3px] text-primary">{getBlockProps('blog').title || t('blog')}</h3>
+                    <div className="h-1.5 w-12 bg-primary rounded-full" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
+                    {(getBlockProps('blog').items || []).map((item: any, i: number) => (
+                      <div key={i} className="arter-card !p-0 group overflow-hidden flex flex-col h-full border border-[var(--border)] cursor-pointer" onClick={() => setActiveBlogView(item.id || 'index')}>
+                        <div className="h-48 overflow-hidden relative">
+                           <img src={item.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        </div>
+                        <div className="p-8 space-y-4 flex-1 flex flex-col">
+                           <h4 className="font-bold text-xl group-hover:text-primary transition-colors">{item.title}</h4>
+                           <p className="text-sm text-[var(--on-surface-muted)] line-clamp-2">{item.description}</p>
+                           <Button variant="ghost" size="sm" className="mt-auto self-start text-primary group-hover:gap-3 transition-all">LEER MÁS</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </ScrollReveal>
+
+              <ScrollReveal delay={0.05}>
+                <div id={cmsData?.blocks?.find((b: any) => b.type === 'contact')?.id || 'contact'}>
+                  <ContactForm />
+                </div>
               </ScrollReveal>
 
               <footer className="pt-20 pb-10 border-t border-[var(--border)] text-center space-y-8">
